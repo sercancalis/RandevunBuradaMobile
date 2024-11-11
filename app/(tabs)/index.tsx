@@ -1,70 +1,285 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  TextInput,
+  TouchableOpacity,
+} from "react-native";
+import * as Location from "expo-location";
+import GooglePlacesAPI from "@/utils/GooglePlacesAPI";
+import { PlaceModel } from "@/Models/PlaceModel";
+import PlaceListView from "@/components/PlaceListView";
+import { FontAwesome, Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import Header from "@/components/Header";
+import { Colors } from "@/constants/Colors";
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+interface IndexPageProps {}
 
-export default function HomeScreen() {
+const IndexPage: React.FC<IndexPageProps> = (props) => {
+  const router = useRouter();
+  const [placeList, setPlaceList] = useState<PlaceModel[]>([]);
+  const [popularPlaceList, setPopularPlaceList] = useState<PlaceModel[]>([]);
+  const [search, setSearch] = useState("");
+  const [location, setLocation] = useState({
+    latitude: 41.0082,
+    longitude: 28.9784,
+  });
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const tabs = [
+    {
+      label: "Kuaför / Berber",
+      value: "hair_care",
+    },
+    {
+      label: "Güzellik Merkezi",
+      value: "beauty_salon",
+    },
+    {
+      label: "Spa Merkezi",
+      value: "spa",
+    },
+  ];
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === "granted") {
+        const currentLocation = await Location.getCurrentPositionAsync({});
+        setLocation({
+          latitude: currentLocation.coords.latitude,
+          longitude: currentLocation.coords.longitude,
+        });
+      } else {
+        alert("Location permission denied. Defaulting to Istanbul.");
+      }
+    })();
+  }, []);
+
+  const GetNearByPlace = (tab: number) => {
+    setLoading(true);
+    const data = {
+      includedTypes: [tabs[tab].value],
+      maxResultCount: 20,
+      locationRestriction: {
+        circle: {
+          center: {
+            latitude: location.latitude,
+            longitude: location.longitude,
+          },
+          radius: 1000.0,
+        },
+      },
+    };
+
+    GooglePlacesAPI.NewNearByPlace(data)
+      .then((res) => {
+        setPlaceList(res.data?.places);
+        setPopularPlaceList(
+          [...res.data.places].sort((a: any, b: any) => b.rating - a.rating)
+        );
+        setLoading(false);
+      })
+      .catch((e) => {
+        console.log("Error fetching places:", e);
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    setPlaceList([]);
+    GetNearByPlace(selectedTab);
+  }, [location, selectedTab]);
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+    <ScrollView style={styles.container}>
+      <Header showLogo hideShadow />
+      <View
+        style={{
+          backgroundColor: "white",
+          paddingHorizontal: 20,
+          borderBottomLeftRadius: 40,
+          borderBottomRightRadius: 40,
+        }}
+      >
+        <View style={{ position: "relative" }}>
+          <TextInput
+            style={{
+              borderWidth: 0.5,
+              padding: 10,
+              borderRadius: 20,
+              borderColor: "gray",
+              paddingLeft: 40,
+              fontFamily: "Poppins_500Medium",
+            }}
+            placeholder="Arama"
+            value={search}
+            onChangeText={setSearch}
+          />
+          <Ionicons
+            name="search"
+            style={{ position: "absolute", top: 10, left: 10 }}
+            size={20}
+            color={"gray"}
+          />
+        </View>
+
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            margin: 20,
+          }}
+        >
+          <TouchableOpacity
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: Colors.light.red,
+              paddingVertical: 10,
+              paddingHorizontal: 20,
+              borderRadius: 100,
+            }}
+            onPress={() => router.push("/(tabs)/appointment")}
+          >
+            <Image
+              source={require("@/assets/images/randevu_burada_appicon_white.png")}
+              alt="Logo Icon"
+              style={{
+                width: 30,
+                height: 30,
+              }}
+              resizeMode="contain"
+            />
+            <Text
+              style={{
+                fontFamily: "Poppins_600SemiBold",
+                color: "white",
+                fontSize: 20,
+              }}
+            >
+              RANDEVU AL
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#ececec",
+            marginBottom: 15,
+            padding: 5,
+            borderRadius: 100,
+            gap: 10,
+          }}
+        >
+          {tabs.map((tab: any, index: number) => (
+            <TouchableOpacity
+              key={index}
+              style={{
+                padding: 5,
+                paddingHorizontal: index === selectedTab ? 10 : 5,
+                backgroundColor: index === selectedTab ? "#000" : "transparent",
+                borderRadius: 50,
+              }}
+              onPress={() => setSelectedTab(index)}
+            >
+              <Text
+                style={{
+                  fontFamily: "Poppins_600Medium",
+                  fontSize: 14,
+                  color: index === selectedTab ? "#fff" : "gray",
+                }}
+              >
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+      <View style={{ padding: 20 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 20 }}>
+            Yakınındaki Noktalar
+          </Text>
+          <FontAwesome
+            name="chevron-right"
+            size={20}
+            onPress={() =>
+              router.push({
+                pathname: "/(pages)/list-hairdressers",
+                params: {
+                  placeList: JSON.stringify(placeList),
+                  title: "Yakınındaki Noktalar",
+                },
+              })
+            }
+          />
+        </View>
+        <PlaceListView
+          placeList={placeList.filter((x) =>
+            x.displayName.text
+              .toLowerCase()
+              .includes(search.trim().toLowerCase())
+          )}
+          loading={loading}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({ ios: 'cmd + d', android: 'cmd + m' })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      </View>
+      <View style={{ paddingHorizontal: 20 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 20 }}>
+            Popüler Yerler
+          </Text>
+          <FontAwesome
+            name="chevron-right"
+            size={20}
+            onPress={() =>
+              router.push({
+                pathname: "/(pages)/list-hairdressers",
+                params: {
+                  placeList: JSON.stringify(popularPlaceList),
+                  title: "Popüler Yerler",
+                },
+              })
+            }
+          />
+        </View>
+        <PlaceListView
+          placeList={popularPlaceList.filter((x) =>
+            x.displayName.text
+              .toLowerCase()
+              .includes(search.trim().toLowerCase())
+          )}
+          loading={loading}
+        />
+      </View>
+    </ScrollView>
   );
-}
+};
+
+export default IndexPage;
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  container: {
+    flex: 1,
   },
 });
