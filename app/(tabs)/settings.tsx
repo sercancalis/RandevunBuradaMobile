@@ -30,6 +30,14 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
           <Text className="">İşletme Kaydet</Text>
           <FontAwesome5 name="chevron-right" size={20} />
         </TouchableOpacity>
+
+        <TouchableOpacity
+          className="flex-row justify-between mt-4 border p-2 shadow bg-white"
+          onPress={() => router.push("/new-hairdressers")}
+        >
+          <Text className="">Personel Kaydet</Text>
+          <FontAwesome5 name="chevron-right" size={20} />
+        </TouchableOpacity>
       </View>
     </View>
   );

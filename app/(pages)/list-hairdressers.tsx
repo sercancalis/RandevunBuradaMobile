@@ -1,26 +1,20 @@
 import { PlaceModel } from "@/Models/PlaceModel";
 import HeaderPage from "@/components/HeaderPage";
-import RenderVerticalPlaceItem from "@/components/RenderVerticalPlaceItem";
-import { FontAwesome } from "@expo/vector-icons";
+import RenderVerticalPlaceItem from "@/components/RenderVerticalPlaceItem"; 
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect } from "react";
 import {
   View,
   Text,
-  StyleSheet,
-  useColorScheme,
-  FlatList,
+  StyleSheet, 
   ScrollView,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+} from "react-native"; 
 
 interface ListHairdressersProps {}
 
 const ListHairdressers: React.FC<ListHairdressersProps> = (props) => {
   const { placeList, title } = useLocalSearchParams();
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const theme = useColorScheme() ?? "light";
+  const router = useRouter(); 
 
   const parsedPlaceList: PlaceModel[] | null = placeList
     ? JSON.parse(placeList as string)
