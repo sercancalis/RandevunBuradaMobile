@@ -7,7 +7,8 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Modal
+  Modal,
+  ScrollView
 } from "react-native";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -71,7 +72,7 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <HeaderPage title="İşletme Kaydet" />
       <View className="flex flex-col h-screen bg-white p-4 gap-5 rounded-t-3xl shadow-black">
         <CustomInput
@@ -141,7 +142,7 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
           onClose={() => setShowLocationModal(false)}
         />
       </Modal>
-    </View>
+    </ScrollView>
   )
 }
 export default NewHairdressersPage;
