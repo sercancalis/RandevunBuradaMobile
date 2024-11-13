@@ -7,11 +7,11 @@ import {
   TouchableOpacity,
   Linking,
 } from "react-native";
-import * as Location from "expo-location";
 import GooglePlacesAPI from "@/utils/GooglePlacesAPI";
 import { PlaceModel } from "@/Models/PlaceModel";
 import MapView from "react-native-map-clustering";
 import { Marker } from "react-native-maps";
+import usePermissionsStore from "@/store/permissionsStore";
 
 interface MapPageProps {}
 
@@ -20,33 +20,8 @@ const MapPage: React.FC<MapPageProps> = () => {
   const [selectedPlace, setSelectedPlace] = useState<PlaceModel | null>(null);
   const apiKey = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY;
   const [isLoading, setIsLoading] = useState(false);
-  const [location, setLocation] = useState({
-    latitude: 41.0082,
-    longitude: 28.9784,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
-  });
-
-  useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      setIsLoading(true);
-      if (status === "granted") {
-        const currentLocation = await Location.getCurrentPositionAsync({});
-        setLocation({
-          latitude: currentLocation.coords.latitude,
-          longitude: currentLocation.coords.longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        });
-      } else {
-        alert("Location permission denied. Defaulting to Istanbul.");
-      }
-    })();
-  }, []);
-
+  const { location } = usePermissionsStore.getState();
   const GetNearByPlace = (field: string) => {
-    console.log(123, field);
     const data = {
       includedTypes: [field],
       maxResultCount: 20,
@@ -79,7 +54,7 @@ const MapPage: React.FC<MapPageProps> = () => {
   return (
     <View style={styles.container}>
       <MapView
-        region={location} // Konumu güncellemek için `region` kullan
+        region={location}
         style={{ flex: 1 }}
         showsMyLocationButton
         zoomEnabled

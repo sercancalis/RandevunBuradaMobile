@@ -16,6 +16,7 @@ import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
+import usePermissionsStore from "@/store/permissionsStore";
 
 interface IndexPageProps {}
 
@@ -24,10 +25,8 @@ const IndexPage: React.FC<IndexPageProps> = (props) => {
   const [placeList, setPlaceList] = useState<PlaceModel[]>([]);
   const [popularPlaceList, setPopularPlaceList] = useState<PlaceModel[]>([]);
   const [search, setSearch] = useState("");
-  const [location, setLocation] = useState({
-    latitude: 41.0082,
-    longitude: 28.9784,
-  });
+  const location = usePermissionsStore((state) => state.location);
+
   const [selectedTab, setSelectedTab] = useState(0);
   const [loading, setLoading] = useState(false);
   const tabs = [
@@ -44,21 +43,6 @@ const IndexPage: React.FC<IndexPageProps> = (props) => {
       value: "spa",
     },
   ];
-
-  useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === "granted") {
-        const currentLocation = await Location.getCurrentPositionAsync({});
-        setLocation({
-          latitude: currentLocation.coords.latitude,
-          longitude: currentLocation.coords.longitude,
-        });
-      } else {
-        alert("Location permission denied. Defaulting to Istanbul.");
-      }
-    })();
-  }, []);
 
   const GetNearByPlace = (tab: number) => {
     setLoading(true);
@@ -93,7 +77,7 @@ const IndexPage: React.FC<IndexPageProps> = (props) => {
   useEffect(() => {
     setPlaceList([]);
     GetNearByPlace(selectedTab);
-  }, [location, selectedTab]);
+  }, [selectedTab]);
 
   return (
     <ScrollView style={styles.container}>

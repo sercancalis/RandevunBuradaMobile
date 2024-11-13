@@ -1,4 +1,5 @@
 import { PlaceModel } from "@/Models/PlaceModel";
+import HeaderPage from "@/components/HeaderPage";
 import RenderVerticalPlaceItem from "@/components/RenderVerticalPlaceItem";
 import { FontAwesome } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -36,33 +37,7 @@ const ListHairdressers: React.FC<ListHairdressersProps> = (props) => {
   }
   return (
     <ScrollView style={styles.container}>
-      <View
-        style={[
-          {
-            paddingTop: insets.top + 20,
-            padding: 20,
-          },
-        ]}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            position: "relative",
-          }}
-        >
-          <Text style={{ fontFamily: "Poppins_600SemiBold", color: "#000" }}>
-            {title}
-          </Text>
-          <FontAwesome
-            name="chevron-left"
-            size={20}
-            onPress={() => router.back()}
-            style={{ position: "absolute", left: 0 }}
-          />
-        </View>
-      </View>
+      <HeaderPage title={title as string} />
       <View
         style={{
           backgroundColor: "white",

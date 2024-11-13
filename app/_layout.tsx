@@ -34,6 +34,8 @@ import {
   Poppins_900Black,
   Poppins_900Black_Italic,
 } from "@expo-google-fonts/poppins";
+import "@/styles/globals.css";
+import { requestLocationPermissions } from "@/utils/requestPermissions";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -83,6 +85,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded) {
       SplashScreen.hideAsync();
+      requestLocationPermissions();
     }
   }, [fontsLoaded]);
 
@@ -91,38 +94,6 @@ export default function RootLayout() {
   }
 
   const RootLayoutNav = () => {
-    const router = useRouter();
-    const { isLoaded, isSignedIn } = useAuth();
-    const segments = useSegments();
-
-    useEffect(() => {
-      if (isLoaded && !isSignedIn) {
-        // router.push("/(modals)/login");
-      }
-    }, [isLoaded]);
-
-    // useEffect(() => {
-    //   if (!isLoaded) return;
-
-    //   const inAuthGroup = segments[0] === "(authenticated)";
-
-    //   if (isSignedIn && !inAuthGroup) {
-    //     router.replace("/(authenticated)/(tabs)/boards");
-    //   } else if (!isSignedIn) {
-    //     router.replace("/");
-    //   }
-    // }, [isSignedIn]);
-
-    if (!isLoaded) {
-      return (
-        <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
-          <ActivityIndicator size="large" />
-        </View>
-      );
-    }
-
     return (
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

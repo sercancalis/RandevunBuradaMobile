@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Carousel from "react-native-reanimated-carousel";
+import HeaderPage from "@/components/HeaderPage";
 
 interface HairdressersDetailProps {}
 
@@ -40,36 +41,9 @@ const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
     return null;
   }
 
-  console.log(123, parsedData);
   return (
     <ScrollView style={styles.container}>
-      <View
-        style={[
-          {
-            paddingTop: insets.top + 20,
-            padding: 20,
-          },
-        ]}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            position: "relative",
-          }}
-        >
-          <Text style={{ fontFamily: "Poppins_600SemiBold", color: "#000" }}>
-            {""}
-          </Text>
-          <FontAwesome
-            name="chevron-left"
-            size={20}
-            onPress={() => router.back()}
-            style={{ position: "absolute", left: 0 }}
-          />
-        </View>
-      </View>
+      <HeaderPage title=""/>
       <View
         style={{
           height: height,
@@ -171,11 +145,12 @@ const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
               </Text>
             </Text>
             {parsedData.regularOpeningHours?.weekdayDescriptions?.map(
-              (data: any) => {
+              (data: any, index: number) => {
                 var day = data.split(": ")[0];
                 var hour = data.split(": ")[1];
                 return (
                   <View
+                    key={index}
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
