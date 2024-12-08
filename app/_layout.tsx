@@ -36,6 +36,7 @@ import {
 } from "@expo-google-fonts/poppins";
 import "@/styles/globals.css";
 import { requestLocationPermissions } from "@/utils/requestPermissions";
+import Toast from 'react-native-toast-message';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -96,7 +97,6 @@ export default function RootLayout() {
   const RootLayoutNav = () => {
     return (
       <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(pages)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
@@ -114,6 +114,7 @@ export default function RootLayout() {
         >
           <RootLayoutNav />
           <SetupInterceptors />
+          <Toast />
         </ThemeProvider>
       </ClerkLoaded>
     </ClerkProvider>

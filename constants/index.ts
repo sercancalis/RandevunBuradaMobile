@@ -7,3 +7,18 @@ export enum WorkingHours {
     saturday = 5,  // Cumartesi
     sunday = 6     // Pazar
 }
+ 
+export const categories = [
+    {
+      label: "Kuaför / Berber",
+      value: "hair_care",
+    },
+    {
+      label: "Güzellik Merkezi",
+      value: "beauty_salon",
+    },
+    {
+      label: "Spa Merkezi",
+      value: "spa",
+    },
+  ];

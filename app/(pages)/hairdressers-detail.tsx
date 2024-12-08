@@ -12,12 +12,13 @@ import {
   Image,
   TouchableOpacity,
   Linking,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Carousel from "react-native-reanimated-carousel";
 import HeaderPage from "@/components/HeaderPage";
 
-interface HairdressersDetailProps {}
+interface HairdressersDetailProps { }
 
 const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
   const apiKey = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY;
@@ -25,7 +26,7 @@ const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const theme = useColorScheme() ?? "light";
-  const { width, height } = Dimensions.get("screen");
+  const { width, height } = useWindowDimensions();
 
   const parsedData: PlaceModel | null = place
     ? JSON.parse(place as string)
@@ -43,7 +44,7 @@ const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
 
   return (
     <ScrollView style={styles.container}>
-      <HeaderPage title=""/>
+      <HeaderPage title="" />
       <View
         style={{
           height: height,
@@ -85,7 +86,7 @@ const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
         </View>
         <View style={{ paddingHorizontal: 20, gap: 3 }}>
           <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 16 }}>
-            {parsedData.displayName.text}
+            {parsedData?.displayName?.text}
           </Text>
           <Text style={{ fontFamily: "Poppins_500Medium", fontSize: 12 }}>
             {parsedData.shortFormattedAddress}
@@ -139,9 +140,8 @@ const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
                   fontSize: 11,
                 }}
               >
-                {`(${
-                  parsedData.regularOpeningHours?.openNow ? "Açık" : "Kapalı"
-                })`}
+                {`(${parsedData.regularOpeningHours?.openNow ? "Açık" : "Kapalı"
+                  })`}
               </Text>
             </Text>
             {parsedData.regularOpeningHours?.weekdayDescriptions?.map(

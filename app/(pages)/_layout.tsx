@@ -7,6 +7,9 @@ export default function PagesLayout() {
   const router = useRouter();
   return (
     <Stack>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="settings" options={{ headerShown: false }} />
+      <Stack.Screen name="map" options={{ headerShown: false }} />
       <Stack.Screen name="new-hairdressers" options={{ headerShown: false }} />
       <Stack.Screen name="list-hairdressers" options={{ headerShown: false }} />
       <Stack.Screen
@@ -19,6 +22,19 @@ export default function PagesLayout() {
           headerStyle: { backgroundColor: "transparent" },
           headerShown: true,
           headerTitle: "Kayıt Ol",
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => router.back()}>
+              <FontAwesome5 name="chevron-left" size={20} color="black" />
+            </TouchableOpacity>
+          ),
+        }}
+      />
+      <Stack.Screen
+        name="employees"
+        options={{
+          headerStyle: { backgroundColor: "transparent" },
+          headerShown: true,
+          headerTitle: "Personeller",
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()}>
               <FontAwesome5 name="chevron-left" size={20} color="black" />

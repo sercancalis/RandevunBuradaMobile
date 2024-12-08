@@ -72,7 +72,10 @@ const Header: React.FC<HeaderProps> = (props) => {
             />
           )}
         </View>
-        <Ionicons name="notifications-outline" size={24} color="black" />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+          <Ionicons name="notifications-outline" size={24} color="black" />
+          <Ionicons name="settings" size={24} color="black" onPress={() => router.push("/settings")} />
+        </View>
       </View>
     </View>
   );

@@ -4,7 +4,7 @@ import { Controller, Control, RegisterOptions, FieldValues } from 'react-hook-fo
 import { Input } from './Input';
 
 interface CustomInputProps {
-  control: any; 
+  control: any;
   name: string;
   placeholder?: string;
   secureTextEntry?: boolean;
@@ -12,28 +12,28 @@ interface CustomInputProps {
 }
 
 const CustomInput: React.FC<CustomInputProps> = ({
-  control, 
+  control,
   name,
   placeholder,
   secureTextEntry,
-  isPhoneNumber= false,
+  isPhoneNumber = false,
 }) => {
 
   const formatPhoneNumber = (phone: string): string => {
-     
+
     return phone;
   };
-   
-  
+
+
   return (
     <Controller
-      control={control} 
+      control={control}
       name={name}
       render={({ field: { value, onChange, onBlur }, fieldState: { error } }) => (
-        <View className='flex'>  
+        <View className='flex'>
           <Input
-            value={value ? value.toString(): ""}
-            onChangeText={(text) => { 
+            value={value ? value.toString() : ""}
+            onChangeText={(text) => {
               onChange(isPhoneNumber ? formatPhoneNumber(text) : text);
             }}
             onBlur={onBlur}
@@ -42,7 +42,7 @@ const CustomInput: React.FC<CustomInputProps> = ({
             secureTextEntry={secureTextEntry}
           />
           {error && (
-            <Text style={{ color: 'red', alignSelf: 'stretch' }}>
+            <Text style={{ alignSelf: 'stretch' }} className='text-rose-500'>
               {error.message || 'Error'}
             </Text>
           )}
@@ -53,8 +53,8 @@ const CustomInput: React.FC<CustomInputProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: {  
-    backgroundColor: 'white', 
+  container: {
+    backgroundColor: 'white',
     borderColor: '#e8e8e8',
     borderWidth: 1,
     borderRadius: 5,

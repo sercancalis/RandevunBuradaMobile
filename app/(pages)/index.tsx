@@ -17,8 +17,9 @@ import { useRouter } from "expo-router";
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
 import usePermissionsStore from "@/store/permissionsStore";
+import { categories } from "@/constants";
 
-interface IndexPageProps {}
+interface IndexPageProps { }
 
 const IndexPage: React.FC<IndexPageProps> = (props) => {
   const router = useRouter();
@@ -29,25 +30,12 @@ const IndexPage: React.FC<IndexPageProps> = (props) => {
 
   const [selectedTab, setSelectedTab] = useState(0);
   const [loading, setLoading] = useState(false);
-  const tabs = [
-    {
-      label: "Kuaför / Berber",
-      value: "hair_care",
-    },
-    {
-      label: "Güzellik Merkezi",
-      value: "beauty_salon",
-    },
-    {
-      label: "Spa Merkezi",
-      value: "spa",
-    },
-  ];
+
 
   const GetNearByPlace = (tab: number) => {
     setLoading(true);
     const data = {
-      includedTypes: [tabs[tab].value],
+      includedTypes: [categories[tab].value],
       maxResultCount: 20,
       locationRestriction: {
         circle: {
@@ -63,6 +51,7 @@ const IndexPage: React.FC<IndexPageProps> = (props) => {
     GooglePlacesAPI.NewNearByPlace(data)
       .then((res) => {
         setPlaceList(res.data?.places);
+        console.log(placeList[0])
         setPopularPlaceList(
           [...res.data.places].sort((a: any, b: any) => b.rating - a.rating)
         );
@@ -90,7 +79,7 @@ const IndexPage: React.FC<IndexPageProps> = (props) => {
           borderBottomRightRadius: 40,
         }}
       >
-        <View style={{ position: "relative" }}>
+        <View style={{ position: "relative", marginBottom: 20 }}>
           <TextInput
             style={{
               borderWidth: 0.5,
@@ -117,46 +106,6 @@ const IndexPage: React.FC<IndexPageProps> = (props) => {
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "center",
-            margin: 20,
-          }}
-        >
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              backgroundColor: Colors.light.red,
-              paddingVertical: 10,
-              paddingHorizontal: 20,
-              borderRadius: 100,
-            }}
-            onPress={() => router.push("/(tabs)/appointment")}
-          >
-            <Image
-              source={require("@/assets/images/randevu_burada_appicon_white.png")}
-              alt="Logo Icon"
-              style={{
-                width: 30,
-                height: 30,
-              }}
-              resizeMode="contain"
-            />
-            <Text
-              style={{
-                fontFamily: "Poppins_600SemiBold",
-                color: "white",
-                fontSize: 20,
-              }}
-            >
-              RANDEVU AL
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
             backgroundColor: "#ececec",
             marginBottom: 15,
             padding: 5,
@@ -164,7 +113,7 @@ const IndexPage: React.FC<IndexPageProps> = (props) => {
             gap: 10,
           }}
         >
-          {tabs.map((tab: any, index: number) => (
+          {categories.map((tab: any, index: number) => (
             <TouchableOpacity
               key={index}
               style={{

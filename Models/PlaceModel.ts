@@ -1,4 +1,5 @@
 export interface PlaceModel {
+  name: string;
   displayName: DisplayNameModel;
   location: LocationModel;
   photos: PhotosModel[];

@@ -5,13 +5,13 @@ import { useRouter } from "expo-router";
 import React from "react";
 import { View, Text, StyleSheet, Appearance, TouchableOpacity } from "react-native";
 
-interface SettingsPageProps {}
+interface SettingsPageProps { }
 
 const SettingsPage: React.FC<SettingsPageProps> = (props) => {
   const router = useRouter();
   return (
     <View style={styles.container}>
-      <Header showLogo />
+      <Header showLogo showBackButton />
       <View className="flex flex-col p-6 space-y-6">
         <View className="flex-row justify-between">
           <Text className="">Dark Modu</Text>
@@ -33,7 +33,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
 
         <TouchableOpacity
           className="flex-row justify-between mt-4 border p-2 shadow bg-white"
-          onPress={() => router.push("/new-hairdressers")}
+          onPress={() => router.push("/employees")}
         >
           <Text className="">Personel Kaydet</Text>
           <FontAwesome5 name="chevron-right" size={20} />
