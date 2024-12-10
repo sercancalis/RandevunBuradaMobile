@@ -12,6 +12,7 @@ export default function PagesLayout() {
       <Stack.Screen name="map" options={{ headerShown: false }} />
       <Stack.Screen name="new-hairdressers" options={{ headerShown: false }} />
       <Stack.Screen name="list-hairdressers" options={{ headerShown: false }} />
+      <Stack.Screen name="appointment" options={{ headerShown: false }} />
       <Stack.Screen
         name="hairdressers-detail"
         options={{ headerShown: false }}

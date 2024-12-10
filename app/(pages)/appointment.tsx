@@ -1,500 +1,484 @@
-import AppButton from "@/components/AppButton";
+import { PlaceModel } from "@/Models/PlaceModel";
 import Header from "@/components/Header";
-import MyCalendar from "@/components/MyCalendar";
-import OrComponent from "@/components/OrComponent";
-import { ThemedView } from "@/components/ThemedView";
-import { useWarmUpBrowser } from "@/hooks/useWarmUpBrowser";
-import { useClerk, useOAuth, useSignIn, useUser } from "@clerk/clerk-expo";
-import { AntDesign, Ionicons } from "@expo/vector-icons";
-import {
-  BottomSheetModal,
-  BottomSheetModalProvider,
-  BottomSheetView,
-} from "@gorhom/bottom-sheet";
-import { useRouter } from "expo-router";
-import React, { useCallback, useRef, useState } from "react";
+import HeaderPage from "@/components/HeaderPage";
+import { FontAwesome } from "@expo/vector-icons";
+import { BottomSheetModal, BottomSheetModalProvider, BottomSheetView } from "@gorhom/bottom-sheet";
+import Checkbox from "expo-checkbox";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
+  Image,
   Text,
   StyleSheet,
+  useWindowDimensions,
   TouchableOpacity,
-  TextInput,
-  Dimensions,
-  Image,
-  KeyboardAvoidingView,
-  TouchableWithoutFeedback,
-  Keyboard,
+  Linking,
+  Button,
+  ScrollView,
+  Platform,
+  Pressable
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import Carousel from "react-native-reanimated-carousel";
+import RNDateTimePicker, {
+  DateTimePickerAndroid,
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
+import moment from "moment";
+interface AppointmentProps {
 
-interface AppointmentPageProps {}
-
-enum Strategy {
-  Google = "oauth_google",
-  Apple = "oauth_apple",
-  Facebook = "oauth_facebook",
 }
 
-const { height } = Dimensions.get("screen");
-const AppointmentPage: React.FC<AppointmentPageProps> = (props) => {
-  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+const Appointment: React.FC<AppointmentProps> = (props) => {
 
-  const handlePresentModalPress = useCallback(() => {
-    bottomSheetModalRef.current?.present();
-  }, []);
-
-  useWarmUpBrowser();
-  const { signIn, setActive, isLoaded } = useSignIn();
-  const { signOut } = useClerk();
-  const { user } = useUser();
+  const apiKey = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY;
+  const { place } = useLocalSearchParams();
   const router = useRouter();
-  const { startOAuthFlow: googleAuth } = useOAuth({ strategy: "oauth_google" });
-  const { startOAuthFlow: appleAuth } = useOAuth({ strategy: "oauth_apple" });
-  const { startOAuthFlow: facebookAuth } = useOAuth({
-    strategy: "oauth_facebook",
-  });
+  const { width, height } = useWindowDimensions();
+  const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+  const [selectedPersonel, setSelectedPersonel] = useState<any>(null);
+  const [selectedHour, setSelectedHour] = useState(new Date());
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [sheetModalType, setSheetModalType] = useState<"personel" | "hour" | "time" | "services">("personel");
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
-  const [input, setInput] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [isPhone, setIsPhone] = useState(false);
-  const [error, setError] = useState("");
-  const [showSecondModal, setShowSecondModal] = useState(false);
 
-  const onSelectAuth = async (strategy: Strategy) => {
-    const selectedAuth = {
-      [Strategy.Google]: googleAuth,
-      [Strategy.Apple]: appleAuth,
-      [Strategy.Facebook]: facebookAuth,
-    }[strategy];
+  const personelList = [
+    { id: '1', name: 'Ali' },
+    { id: '2', name: 'Mert' },
+    { id: '3', name: 'Taygun' },
+    { id: '4', name: 'Hasan' },
+    { id: '5', name: 'Ahmet' },
+  ];
 
-    try {
-      const { createdSessionId, setActive } = await selectedAuth();
-      if (createdSessionId) {
-        setActive!({ session: createdSessionId });
-        bottomSheetModalRef.current?.close();
+  const services = [
+    'Saç Yıkama',
+    'Fön',
+    'Ağda',
+    'Saç Boyası',
+    'Manikür',
+    'Pedikür',
+  ];
+
+  const parsedData: PlaceModel | null = place
+    ? JSON.parse(place as string)
+    : null;
+
+  useEffect(() => {
+    if (!parsedData) {
+      router.push("/");
+    }
+  }, [parsedData, router]);
+
+  if (!parsedData) {
+    return null;
+  }
+
+  const openBottomSheet = () => {
+    setIsBottomSheetVisible(true);
+    bottomSheetModalRef.current?.present();
+  };
+
+  const closeBottomSheet = () => {
+    setIsBottomSheetVisible(false);
+    bottomSheetModalRef.current?.dismiss();
+  };
+
+  const getAvailableTimes = () => {
+    const workingHours = "09:00-17:00";
+    const [start, end] = workingHours.split("-");
+    const [startHour, startMinute] = start.split(":").map(Number);
+    const [endHour, endMinute] = end.split(":").map(Number);
+
+    const times: string[] = [];
+    let currentHour = startHour;
+    let currentMinute = startMinute;
+
+    // Generate times in half-hour intervals
+    while (currentHour < endHour || (currentHour === endHour && currentMinute < endMinute)) {
+      const time = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+      times.push(time);
+
+      currentMinute += 30;
+      if (currentMinute === 60) {
+        currentMinute = 0;
+        currentHour += 1;
+      }
+    }
+
+    return times;
+  };
+
+  const toggleServiceSelection = (service: string) => {
+    setSelectedServices((prevSelectedServices) => {
+      if (prevSelectedServices.includes(service)) {
+        return prevSelectedServices.filter((item) => item !== service);
       } else {
+        return [...prevSelectedServices, service];
       }
-    } catch (err) {
-      console.error("OAuth error", err);
-    }
-  };
-
-  const submit = () => {
-    reset();
-    if (!user) return handlePresentModalPress();
-  };
-
-  const onSignInPress = async () => {
-    setError("");
-    if (!input)
-      return setError(
-        isPhone
-          ? "Lütfen telefon numarası giriniz"
-          : "Lütfen email ya da kullanıcı adı giriniz"
-      );
-    if (!isLoaded) {
-      return;
-    }
-    try {
-      var res = await signIn.create({
-        identifier: input,
-      });
-      if (res.status === "needs_first_factor") setShowSecondModal(true);
-    } catch (error) {
-      setError("Hesabınızı sistemde bulamadık. Lütfen kayıt olunuz.");
-    }
-  };
-
-  const loginAction = async () => {
-    if (!password) return setError("Lütfen şifre giriniz");
-    if (!isLoaded) {
-      return;
-    }
-    try {
-      const signInAttempt = await signIn.attemptFirstFactor({
-        password: password,
-        strategy: "password",
-      });
-      if (signInAttempt.status === "complete") {
-        await setActive({ session: signInAttempt.createdSessionId });
-        bottomSheetModalRef.current?.close();
-      }
-    } catch (error) {
-      setError(
-        isPhone
-          ? "Telefon bilginiz ile şifreniz eşleşmemektedir."
-          : "Email ya da Kullanıcı Adı ile şifreniz eşleşmemektedir."
-      );
-    }
-  };
-
-  const reset = () => {
-    setShowSecondModal(false);
-    setInput("");
-    setPassword("");
-    setError("");
-    setShowPassword(false);
+    });
   };
 
   return (
-    <TouchableWithoutFeedback
-      onPress={() => {
-        Keyboard.dismiss();
-        bottomSheetModalRef.current?.close();
-      }}
-    >
-      <ThemedView style={styles.container}>
-        <GestureHandlerRootView>
-          <BottomSheetModalProvider>
-            <Header showLogo />
-            <MyCalendar />
+    <View style={styles.container}>
 
-            <AppButton title="Randevu" onPress={submit} />
-            {user !== null && <AppButton title="Çıkış" onPress={signOut} />}
+      <GestureHandlerRootView>
+        <BottomSheetModalProvider>
 
-            <BottomSheetModal ref={bottomSheetModalRef}>
-              <BottomSheetView style={styles.contentContainer}>
-                <View style={styles.container}>
-                  {!showSecondModal ? (
-                    <React.Fragment>
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 10,
+          <HeaderPage title="Randevu Al" />
+          <View
+            style={{
+              height: height,
+              backgroundColor: "white",
+              paddingVertical: 20,
+              shadowColor: "#000",
+              shadowOffset: {
+                width: 0,
+                height: 2,
+              },
+              shadowOpacity: 0.25,
+              shadowRadius: 3.84,
+              elevation: 5,
+              borderTopRightRadius: 40,
+              borderTopLeftRadius: 40,
+            }}
+          >
+
+            <TouchableOpacity
+              onPress={() => {
+                setSheetModalType("personel");
+                openBottomSheet();
+              }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingVertical: 10,
+                paddingHorizontal: 20,
+                borderWidth: 1,
+                marginHorizontal: 20,
+                borderRadius: 10
+              }}>
+              <Text style={{ fontFamily: "Poppins_500Medium" }}>{selectedPersonel ? selectedPersonel.name : "Personel Seçin"}</Text>
+              <FontAwesome name="chevron-down" size={20} />
+            </TouchableOpacity>
+
+            <View style={{ flexDirection: "row", margin: 20, gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setSheetModalType("hour");
+                  openBottomSheet();
+                }}
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  paddingVertical: 10,
+                  paddingHorizontal: 20,
+                  borderWidth: 1,
+                  borderRadius: 10
+                }}>
+                <Text style={{ fontFamily: "Poppins_500Medium" }}>{moment(selectedHour).format("DD.MM.YYYY")}</Text>
+                <FontAwesome name="chevron-down" size={20} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setSheetModalType("time");
+                  openBottomSheet();
+                }}
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  paddingVertical: 10,
+                  paddingHorizontal: 20,
+                  borderWidth: 1,
+                  borderRadius: 10
+                }}>
+                <Text style={{ fontFamily: "Poppins_500Medium" }}>{selectedTime ?? "Saat Seçin"}</Text>
+                <FontAwesome name="chevron-down" size={20} />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => {
+                setSheetModalType("services");
+                openBottomSheet();
+              }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingVertical: 10,
+                paddingHorizontal: 20,
+                borderWidth: 1,
+                marginHorizontal: 20,
+                borderRadius: 10
+              }}>
+              <Text style={{ fontFamily: "Poppins_500Medium" }}>{selectedServices.length > 0 ? selectedServices.slice(0, 3).join(", ") + (selectedServices.length > 3 ? "..." : "") : "Hizmet Seçin"}</Text>
+              <FontAwesome name="chevron-down" size={20} />
+            </TouchableOpacity>
+
+            <View style={{ position: "relative", height: height / 4 }}>
+              <Carousel
+                loop
+                mode="parallax"
+                width={width}
+                height={width / 2}
+                data={parsedData.photos}
+                scrollAnimationDuration={1000}
+                onSnapToItem={(index) => console.log("current index:", index)}
+                renderItem={({ item, index }) => (
+                  <Image
+                    source={{
+                      uri: `https://places.googleapis.com/v1/${item.name}/media?maxHeightPx=400&maxWidthPx=400&key=${apiKey}`,
+                    }}
+                    alt="Resim"
+                    height={width / 2}
+                    style={{ borderRadius: 10 }}
+                    defaultSource={require("@/assets/images/randevu_burada_logo.png")}
+                  />
+                )}
+              />
+            </View>
+            <View style={{ paddingHorizontal: 20, gap: 3 }}>
+              <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 16 }}>
+                {parsedData?.displayName?.text}
+              </Text>
+              <Text style={{ fontFamily: "Poppins_500Medium", fontSize: 12 }}>
+                {parsedData.shortFormattedAddress}
+              </Text>
+
+              {parsedData.nationalPhoneNumber && (
+                <TouchableOpacity
+                  onPress={() =>
+                    Linking.openURL(
+                      `tel:${parsedData.internationalPhoneNumber.replace(
+                        /\s+/g,
+                        ""
+                      )}`
+                    )
+                  }
+                >
+                  <Text
+                    style={{
+                      color: "blue",
+                      textDecorationLine: "underline",
+                    }}
+                  >
+                    {parsedData.nationalPhoneNumber}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                style={{
+                  backgroundColor: "#F99335",
+                  padding: 10,
+                  alignItems: "center",
+                  borderRadius: 10,
+                  marginTop: 50,
+                }}
+                onPress={() =>
+                  router.push({
+                    pathname: "/(pages)/appointment",
+                    params: {
+                      place: JSON.stringify(parsedData),
+                    },
+                  })
+                }
+              >
+                <Text style={{ color: "white", fontFamily: "Poppins_600SemiBold" }}>
+                  Randevu Oluştur
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+
+          {isBottomSheetVisible && (
+            <View style={styles.overlay} onTouchStart={closeBottomSheet} />
+          )}
+
+          <BottomSheetModal
+            ref={bottomSheetModalRef}
+            index={0}
+            snapPoints={['45%']}
+            onDismiss={closeBottomSheet}
+          >
+            <BottomSheetView style={styles.contentContainer}>
+              {sheetModalType === "personel" ? <React.Fragment>
+                <Text style={styles.title}>Personel Seçimi</Text>
+                <ScrollView contentContainerStyle={styles.scrollContent}>
+                  {personelList.map((person) => (
+                    <TouchableOpacity
+                      key={person.id}
+                      style={styles.itemContainer}
+                      onPress={() => {
+                        setSelectedPersonel(person);
+                        closeBottomSheet();
+                      }}>
+                      <Checkbox
+                        onValueChange={() => {
+                          setSelectedPersonel(person);
+                          closeBottomSheet();
+                        }}
+                        value={person.name === selectedPersonel.name}
+                      />
+                      <Text style={styles.itemLabel}>{person.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </React.Fragment>
+                : sheetModalType === "hour" ?
+                  <React.Fragment>
+                    <Text style={styles.title}>Tarih Seçimi</Text>
+                    {Platform.OS === "ios" && (
+                      <RNDateTimePicker
+                        mode="date"
+                        value={selectedHour}
+                        onChange={(event, date) => {
+                          if (date) {
+                            setSelectedHour(date);
+                            closeBottomSheet();
+                          }
+                        }}
+                        locale="tr"
+                        minimumDate={new Date()}
+                        display="inline"
+                      />
+                    )}
+                    {Platform.OS === "android" && (
+                      <Pressable
+                        onPress={() => {
+                          DateTimePickerAndroid.open({
+                            value: selectedHour,
+                            onChange: (event, date) => {
+                              if (date) {
+                                setSelectedHour(date);
+                                closeBottomSheet();
+                              }
+                            },
+                            mode: "date",
+                            minimumDate: new Date(),
+                            display: "spinner"
+                          });
                         }}
                       >
-                        <TouchableOpacity
-                          style={styles.btnOutline}
-                          onPress={() => onSelectAuth(Strategy.Apple)}
-                        >
-                          <Ionicons name="logo-apple" size={24} />
-                        </TouchableOpacity>
 
-                        <TouchableOpacity
-                          style={styles.btnOutline}
-                          onPress={() => onSelectAuth(Strategy.Google)}
-                        >
-                          <Image
-                            source={require("@/assets/images/googleIcon.png")}
-                            resizeMode="contain"
-                            style={{ aspectRatio: 1, height: 24 }}
-                          />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                          style={styles.btnOutline}
-                          onPress={() => onSelectAuth(Strategy.Facebook)}
-                        >
-                          <Image
-                            source={require("@/assets/images/facebookIcon.png")}
-                            resizeMode="contain"
-                            style={{ aspectRatio: 1, height: 24 }}
-                          />
-                        </TouchableOpacity>
-                      </View>
-
-                      <OrComponent />
-
-                      <View style={{}}>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            marginBottom: 5,
-                          }}
-                        >
-                          <Text style={{ fontFamily: "Poppins_600SemiBold" }}>
-                            {isPhone
-                              ? "Telefon Numarası"
-                              : "Email ya da Kullanıcı Adı"}
-                          </Text>
-                          <Text
-                            style={{
-                              textDecorationLine: "underline",
-                              color: "blue",
-                              fontFamily: "Poppins_600SemiBold",
+                      </Pressable>
+                    )}
+                  </React.Fragment>
+                  : sheetModalType === "time" ?
+                    <React.Fragment>
+                      <Text style={styles.title}>Saat Seçimi</Text>
+                      <ScrollView contentContainerStyle={styles.scrollContent}>
+                        {getAvailableTimes().map((data, index) => (
+                          <TouchableOpacity
+                            key={index}
+                            style={styles.itemContainer}
+                            onPress={() => {
+                              setSelectedTime(data);
+                              closeBottomSheet();
                             }}
-                            onPress={() => setIsPhone(!isPhone)}
                           >
-                            {isPhone
-                              ? "Email ya da Kullanıcı Adı"
-                              : "Telefon İle"}
-                          </Text>
-                        </View>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            gap: 10,
-                          }}
-                        >
-                          {isPhone && (
-                            <Text
-                              style={{
-                                fontFamily: "Poppins_600SemiBold",
-                                borderWidth: 1,
-                                padding: 10,
-                                borderColor: "#ABABAB",
-                                borderRadius: 8,
+                            <Checkbox
+                              onValueChange={() => {
+                                setSelectedTime(data);
+                                closeBottomSheet();
                               }}
-                            >
-                              +90
-                            </Text>
-                          )}
-                          <TextInput
-                            autoCapitalize="none"
-                            value={input}
-                            style={[styles.inputField]}
-                            onChangeText={(e) => {
-                              setInput(e);
-                              if (e) setError("");
-                            }}
-                          />
-                        </View>
-                        {error && (
-                          <Text
-                            style={{
-                              fontFamily: "Poppins_600SemiBold",
-                              color: "red",
-                              fontSize: 10,
-                            }}
-                          >
-                            {error}
-                          </Text>
-                        )}
-                      </View>
-                      <TouchableOpacity onPress={onSignInPress}>
-                        <Text
-                          style={[
-                            styles.btnText,
-                            {
-                              backgroundColor: "black",
-                              color: "white",
-                              padding: 5,
-                              textDecorationLine: "none",
-                              borderWidth: 1,
-                              borderRadius: 10,
-                            },
-                          ]}
-                        >
-                          Devam Et
-                        </Text>
-                      </TouchableOpacity>
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 5,
-                        }}
-                      >
-                        <Text style={{ fontFamily: "Poppins_600SemiBold" }}>
-                          Hesabın yok mu ?
-                        </Text>
-                        <Text
-                          style={[styles.btnText, { color: "blue" }]}
-                          onPress={() => {
-                            router.push("/(pages)/register");
-                            bottomSheetModalRef.current?.close();
-                          }}
-                        >
-                          Kayıt Ol
-                        </Text>
-                      </View>
+                              value={data === selectedTime}
+                            />
+                            <Text style={styles.itemLabel}>{data}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
                     </React.Fragment>
-                  ) : (
-                    <React.Fragment>
-                      <Text
-                        style={{
-                          fontFamily: "Poppins_700Bold",
-                          textAlign: "center",
-                          fontSize: 18,
-                        }}
-                      >
-                        Şifre Giriniz
-                      </Text>
-                      <View>
-                        <Text
-                          style={{
-                            fontFamily: "Poppins_500Medium",
-                            textAlign: "center",
-                            color: "gray",
-                            fontSize: 14,
-                          }}
-                        >
-                          Hesabınızla ilişkili şifreyi giriniz
-                        </Text>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: 10,
-                            marginBottom: 10,
-                          }}
-                        >
-                          <Text
+                    : <React.Fragment>
+                      <Text style={styles.title}>Hizmet Seçimi</Text>
+                      <ScrollView contentContainerStyle={styles.grid}>
+                        {services.map((service, index) => (
+                          <View
+                            key={service}
                             style={{
-                              fontFamily: "Poppins_600SemiBold",
-                              color: "gray",
-                              fontSize: 14,
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              width: '50%',
+                              paddingVertical: 10,
+                              marginBottom: 10,
                             }}
                           >
-                            {input}
-                          </Text>
-                          <AntDesign
-                            name="edit"
-                            size={20}
-                            color={"blue"}
-                            onPress={reset}
-                          />
-                        </View>
-                      </View>
+                            <TouchableOpacity style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: 5
+                            }}>
+                              <Checkbox
+                                value={selectedServices.includes(service)}
+                                onValueChange={() => toggleServiceSelection(service)}
+                              />
+                              <Text style={styles.itemLabel}>{service}</Text>
+                            </TouchableOpacity>
+                          </View>
+                        ))}
+                      </ScrollView>
+                    </React.Fragment>
+              }
+            </BottomSheetView>
+          </BottomSheetModal>
 
-                      <View style={{}}>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            marginBottom: 5,
-                          }}
-                        >
-                          <Text style={{ fontFamily: "Poppins_600SemiBold" }}>
-                            Şifre
-                          </Text>
-                          <Text
-                            style={{
-                              color: "blue",
-                              fontFamily: "Poppins_600SemiBold",
-                            }}
-                          >
-                            Şifremi Unuttum
-                          </Text>
-                        </View>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            gap: 10,
-                          }}
-                        >
-                          <TextInput
-                            autoCapitalize="none"
-                            value={password}
-                            style={[styles.inputField]}
-                            onChangeText={(e) => {
-                              setPassword(e);
-                              if (e) setError("");
-                            }}
-                            secureTextEntry={!showPassword}
-                          />
-                          <Ionicons
-                            name={showPassword ? "eye-off" : "eye"}
-                            style={{ position: "absolute", right: 10, top: 10 }}
-                            size={24}
-                            onPress={() => setShowPassword(!showPassword)}
-                          />
-                        </View>
-                        {error && (
-                          <Text
-                            style={{
-                              fontFamily: "Poppins_600SemiBold",
-                              color: "red",
-                              fontSize: 10,
-                            }}
-                          >
-                            {error}
-                          </Text>
-                        )}
-                      </View>
-                      <TouchableOpacity onPress={loginAction}>
-                        <Text
-                          style={[
-                            styles.btnText,
-                            {
-                              backgroundColor: "black",
-                              color: "white",
-                              padding: 5,
-                              textDecorationLine: "none",
-                              borderWidth: 1,
-                              borderRadius: 10,
-                            },
-                          ]}
-                        >
-                          Giriş Yap
-                        </Text>
-                      </TouchableOpacity>
-                    </React.Fragment>
-                  )}
-                </View>
-              </BottomSheetView>
-            </BottomSheetModal>
-          </BottomSheetModalProvider>
-        </GestureHandlerRootView>
-      </ThemedView>
-    </TouchableWithoutFeedback>
-  );
-};
-export default AppointmentPage;
+        </BottomSheetModalProvider>
+      </GestureHandlerRootView>
+    </View >
+  )
+}
+export default Appointment;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    width: "100%",
-    gap: 15,
   },
   contentContainer: {
-    height: height / 3,
-    padding: 20,
-  },
-
-  btnOutline: {
     flex: 1,
+    padding: 16,
+    zIndex: 9999,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  scrollContent: {
+    paddingBottom: 25,
+  },
+  itemContainer: {
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    padding: 5,
-    borderRadius: 10,
-    borderColor: "#cecece",
+    gap: 5
   },
-  inputField: {
-    position: "relative",
-    borderWidth: 1,
-    borderColor: "#ABABAB",
-    borderRadius: 8,
-    padding: 10,
-    lineHeight: 20,
-    flex: 1,
-    fontFamily: "Poppins_500Medium",
-  },
-  btn: {
-    backgroundColor: "black",
-    height: 50,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  btnText: {
-    textAlign: "center",
-    textDecorationLine: "underline",
-    color: "#000",
+  itemLabel: {
     fontSize: 16,
-    fontFamily: "Poppins_600SemiBold",
   },
-  footer: {
-    position: "absolute",
-    height: 100,
-    bottom: 0,
+  overlay: {
+    position: 'absolute',
+    top: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#fff",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderTopColor: "#cecece",
-    borderTopWidth: StyleSheet.hairlineWidth,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  secondItem: {
+    marginLeft: '4%', // Add margin to the second item to keep spacing even
   },
 });

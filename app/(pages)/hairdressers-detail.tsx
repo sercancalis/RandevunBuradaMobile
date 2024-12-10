@@ -6,15 +6,12 @@ import {
   View,
   Text,
   StyleSheet,
-  useColorScheme,
   ScrollView,
-  Dimensions,
   Image,
   TouchableOpacity,
   Linking,
   useWindowDimensions,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Carousel from "react-native-reanimated-carousel";
 import HeaderPage from "@/components/HeaderPage";
 
@@ -24,8 +21,6 @@ const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
   const apiKey = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY;
   const { place } = useLocalSearchParams();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const theme = useColorScheme() ?? "light";
   const { width, height } = useWindowDimensions();
 
   const parsedData: PlaceModel | null = place
@@ -190,6 +185,14 @@ const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
               borderRadius: 10,
               marginTop: 50,
             }}
+            onPress={() =>
+              router.push({
+                pathname: "/(pages)/appointment",
+                params: {
+                  place: JSON.stringify(parsedData),
+                },
+              })
+            }
           >
             <Text style={{ color: "white", fontFamily: "Poppins_600SemiBold" }}>
               Randevu Al
