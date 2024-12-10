@@ -327,7 +327,7 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
                           setSelectedPersonel(person);
                           closeBottomSheet();
                         }}
-                        value={person.name === selectedPersonel.name}
+                        value={person.name === selectedPersonel?.name}
                       />
                       <Text style={styles.itemLabel}>{person.name}</Text>
                     </TouchableOpacity>

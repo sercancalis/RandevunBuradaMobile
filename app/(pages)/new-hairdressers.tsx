@@ -12,7 +12,8 @@ import {
   ScrollView,
   Dimensions,
   FlatList,
-  Alert
+  Alert,
+  TextInput
 } from "react-native";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,6 +26,7 @@ import Toast from "react-native-toast-message";
 import AppDropdownPicker from "@/components/AppDropDownPicker";
 import { categories } from "@/constants";
 import { addBusinessService } from "@/services/BusinessService";
+import ServicesSelector from "@/components/ServicesSelector";
 
 interface NewHairdressersPageProps {
 
@@ -49,7 +51,13 @@ const schema = z.object({
   address: z.string({ required_error: "Lütfen adres bilgisi giriniz" }),
   city: z.string({ required_error: "Lütfen il bilgisini giriniz" }),
   district: z.string({ required_error: "Lütfen ilçe bilgisini giriniz" }),
-  images: z.array(z.string()).min(1, { message: "Lütfen min 1 adet resim ekleyiniz" })
+  images: z.array(z.string()).min(1, { message: "Lütfen min 1 adet resim ekleyiniz" }),
+  services: z.array(
+    z.string({
+      required_error: "Lütfen hizmet giriniz",
+    }).min(3, { message: "Hizmet adı en az 3 karakter olmalı" }) // Her hizmet için 3 karakterden fazla olmalı
+  )
+    .min(1, { message: "Lütfen min 1 adet hizmet ekleyiniz" })
 });
 
 type FormType = z.infer<typeof schema>;
@@ -225,6 +233,17 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
             <WorkingHoursSelector
               control={control}
               name="workingHours"
+            />
+          </View>
+        </View>
+
+        <View>
+          <Text style={{ fontFamily: "Poppins_600SemiBold" }}>Hizmetler</Text>
+          <View style={{ borderWidth: 1, padding: 5, borderColor: "#cecece", borderRadius: 10 }}>
+            <ServicesSelector
+              control={control}
+              name="services"
+              error={Array.isArray(errors?.services) ? errors.services.map((error: any) => error.message).join(', ') : ''}
             />
           </View>
         </View>

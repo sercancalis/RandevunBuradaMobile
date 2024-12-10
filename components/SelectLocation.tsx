@@ -106,6 +106,11 @@ const SelectLocation: React.FC<SelectLocationProps> = ({ onSelectLocation, onClo
   return (
     <GestureHandlerRootView>
       <BottomSheetModalProvider>
+
+        <TouchableOpacity onPress={onClose} style={{ position: "absolute", top: 50, right: 30, zIndex: 999, backgroundColor: "white", borderRadius: 20 }} >
+          <FontAwesome name="times-circle" size={30} />
+        </TouchableOpacity>
+
         <MapView
           style={styles.map}
           initialRegion={location}
@@ -124,11 +129,6 @@ const SelectLocation: React.FC<SelectLocationProps> = ({ onSelectLocation, onClo
             </Marker>
 
           ))}
-
-          <TouchableOpacity onPress={onClose} style={{ position: "absolute", top: 50, right: 30, zIndex: 999, backgroundColor: "white", borderRadius: 20 }} >
-            <FontAwesome name="times-circle" size={30} />
-          </TouchableOpacity>
-
 
           <BottomSheetModal ref={bottomSheetModalRef}>
             <BottomSheetView style={styles.contentContainer}>
