@@ -31,7 +31,6 @@ interface AppointmentProps {
 }
 
 const Appointment: React.FC<AppointmentProps> = (props) => {
-
   const apiKey = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY;
   const { place } = useLocalSearchParams();
   const router = useRouter();
