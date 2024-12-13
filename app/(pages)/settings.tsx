@@ -1,5 +1,7 @@
 import Header from "@/components/Header";
 import { Switch } from "@/components/Switch";
+import { mainService } from "@/utils/axiosInstance";
+import { useClerk } from "@clerk/clerk-expo";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
@@ -8,13 +10,15 @@ import { View, Text, StyleSheet, Appearance, TouchableOpacity } from "react-nati
 interface SettingsPageProps { }
 
 const SettingsPage: React.FC<SettingsPageProps> = (props) => {
+  const { signOut } = useClerk();
   const router = useRouter();
+
   return (
     <View style={styles.container}>
       <Header showLogo showBackButton />
       <View className="flex flex-col p-6 space-y-6">
-        <View className="flex-row justify-between">
-          <Text className="">Dark Modu</Text>
+        <View className="flex-row items-center justify-between">
+          <Text style={{ fontFamily: "Poppins_600SemiBold" }}>Dark Modu</Text>
           <Switch
             value={Appearance.getColorScheme() === "dark"}
             onValueChange={(value) =>
@@ -24,19 +28,29 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
         </View>
 
         <TouchableOpacity
-          className="flex-row justify-between mt-4 border p-2 shadow bg-white"
+          className="flex-row justify-between mt-4 p-4 shadow bg-white rounded-lg"
           onPress={() => router.push("/new-hairdressers")}
         >
-          <Text className="">İşletme Kaydet</Text>
+          <Text style={{ fontFamily: "Poppins_500Medium" }}>İşletme Kaydet</Text>
           <FontAwesome5 name="chevron-right" size={20} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          className="flex-row justify-between mt-4 border p-2 shadow bg-white"
+          className="flex-row justify-between mt-4 p-4 shadow bg-white rounded-lg"
           onPress={() => router.push("/employees")}
         >
-          <Text className="">Personel Kaydet</Text>
+          <Text style={{ fontFamily: "Poppins_500Medium" }}>Personel Kaydet</Text>
           <FontAwesome5 name="chevron-right" size={20} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          className="flex-row justify-between mt-4 p-4 shadow bg-white rounded-lg"
+          onPress={() => {
+            signOut();
+            router.replace("/")
+          }}
+        >
+          <Text style={{ fontFamily: "Poppins_500Medium" }}>Çıkış</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -1,21 +1,36 @@
-import React from "react";
-import { StyleSheet } from "react-native";
-import { OtpInput } from "react-native-otp-entry";
+import React, { forwardRef, useImperativeHandle, useRef } from "react";
+import { Keyboard, StyleSheet } from "react-native";
+import { OtpInput, OtpInputRef } from "react-native-otp-entry";
 
 interface AppOtpInputProps {
   setValue: React.Dispatch<React.SetStateAction<string>>;
-  ref: React.MutableRefObject<null>;
 }
 
-const AppOtpInput: React.FC<AppOtpInputProps> = (props) => {
+export interface AppOtpInputHandle {
+  clearOtp: () => void;
+}
+
+const AppOtpInput = forwardRef<AppOtpInputHandle, AppOtpInputProps>((props, ref) => {
+
+  const otpInputRef = useRef<OtpInputRef>(null);
+
+  // `useImperativeHandle` ile dışarıya metotlar açıyoruz
+  useImperativeHandle(ref, () => ({
+    clearOtp: () => {
+      if (otpInputRef.current) {
+        otpInputRef.current.clear();
+      }
+    },
+  }));
+
   return (
     <OtpInput
-      ref={props.ref}
+      ref={otpInputRef}
       numberOfDigits={6}
       focusColor="blue"
       focusStickBlinkingDuration={500}
       onTextChange={props.setValue}
-      onFilled={(text) => console.log(`OTP is ${text}`)}
+      onFilled={(text) => Keyboard.dismiss()}
       textInputProps={{
         accessibilityLabel: "One-Time Password",
       }}
@@ -26,7 +41,8 @@ const AppOtpInput: React.FC<AppOtpInputProps> = (props) => {
       }}
     />
   );
-};
+});
+
 export default AppOtpInput;
 
 const styles = StyleSheet.create({

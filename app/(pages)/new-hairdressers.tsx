@@ -13,7 +13,8 @@ import {
   Dimensions,
   FlatList,
   Alert,
-  TextInput
+  TextInput,
+  Platform
 } from "react-native";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -60,8 +61,6 @@ const schema = z.object({
     .min(1, { message: "Lütfen min 1 adet hizmet ekleyiniz" })
 });
 
-type FormType = z.infer<typeof schema>;
-
 const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
   const [showLocationModal, setShowLocationModal] = useState(false);
   const {
@@ -70,7 +69,7 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
     formState: { errors },
     setValue,
     watch
-  } = useForm<FormType>({
+  } = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
       workingHours: [
@@ -108,7 +107,7 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
 
     if (!result.canceled && result.assets?.[0]) {
       const images = watch("images") || [];
-      setValue("images", [...images, result.assets[0].uri]);
+      setValue("images", [...images, Platform.OS === "android" ? result.assets[0].uri : result.assets[0].uri.replace("file://", "")]);
     }
   }
 
@@ -118,7 +117,7 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
     return blob;
   }
 
-  const onSubmit: SubmitHandler<FormType> = async (data: FormType) => {
+  const onSubmit: SubmitHandler<z.infer<typeof schema>> = async (data: z.infer<typeof schema>) => {
 
     try {
       var formData = new FormData();

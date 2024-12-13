@@ -1,4 +1,3 @@
-import CustomPhoneNumberInput from "@/components/CustomPhoneNumberInput";
 import OrComponent from "@/components/OrComponent";
 import { useOAuth, useSignUp } from "@clerk/clerk-expo";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
@@ -8,14 +7,20 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   Text,
+  ScrollView,
 } from "react-native";
-import AppInput from "@/components/AppInput";
-import AppOtpInput from "@/components/AppOtpInput";
+import AppOtpInput, { AppOtpInputHandle } from "@/components/AppOtpInput";
 import { useRouter } from "expo-router";
+import CustomInput from "@/components/CustomInput";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { registerSchema } from "@/schema/registerSchema";
+import { mainService } from "@/utils/axiosInstance";
+import Toast from "react-native-toast-message";
 
-interface RegisterPageProps {}
+interface RegisterPageProps { }
 
 enum Strategy {
   Google = "oauth_google",
@@ -32,34 +37,30 @@ const RegisterPage: React.FC<RegisterPageProps> = (props) => {
     strategy: "oauth_facebook",
   });
 
-  const [showVerifyCode, setShowVerifyCode] = useState(false);
-  const [isValidPhoneNumber, setIsValidPhoneNumber] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    username: "",
-    emailAddress: "",
-    phoneNumber: "",
-    password: "",
-  });
-  const [isValidateControl, setIsValidateControl] = useState(false);
-  const [showSmsVerify, setShowSmsVerify] = useState(true);
-  const otpInputRef = useRef(null);
-
-  const clearOtp = () => {
-    if (otpInputRef.current) {
-      //@ts-ignore
-      otpInputRef.current.clear();
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch
+  } = useForm<z.infer<typeof registerSchema>>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      firstName: "sercan",
+      lastName: "çalış",
+      username: "scalis37",
+      emailAddress: "sercancalis7@gmail.com",
+      password: "Sercan1+",
+      phoneNumber: "(538) 287 43 06"
     }
-    setOtp("");
-  };
+  });
 
-  const onChangeText = (name: string, value: string) => {
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const [showVerifyCode, setShowVerifyCode] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [showSmsVerify, setShowSmsVerify] = useState(false);
+  const otpInputRef = useRef<AppOtpInputHandle>(null);
+  const handleClearOtp = () => {
+    otpInputRef.current?.clearOtp(); // `clearOtp` metodu çağrılıyor
   };
 
   const onSelectAuth = async (strategy: Strategy) => {
@@ -70,36 +71,23 @@ const RegisterPage: React.FC<RegisterPageProps> = (props) => {
     }[strategy];
 
     try {
-      const { createdSessionId, setActive } = await selectedAuth();
+      console.log(12131231)
+      const { createdSessionId, setActive, authSessionResult } = await selectedAuth();
+      console.log(2222, createdSessionId)
+      console.log(333, authSessionResult)
       if (createdSessionId) {
         setActive!({ session: createdSessionId });
       } else {
+        console.log(444)
       }
     } catch (err) {
-      console.error("OAuth error", err);
+      const error = JSON.parse(JSON.stringify(err, null, 2));
+      console.error("OAuth error", error);
     }
   };
 
-  const onSignUpPress = async () => {
-    setIsValidateControl(true);
-    const {
-      firstName,
-      lastName,
-      emailAddress,
-      password,
-      phoneNumber,
-      username,
-    } = form;
+  const onSubmit: SubmitHandler<z.infer<typeof registerSchema>> = async (data: z.infer<typeof registerSchema>) => {
     if (
-      !firstName ||
-      !lastName ||
-      !emailAddress ||
-      !password ||
-      !phoneNumber ||
-      !username ||
-      !isValidPhoneNumber ||
-      username?.length < 4 ||
-      password?.length < 8 ||
       !isLoaded
     ) {
       return;
@@ -107,12 +95,12 @@ const RegisterPage: React.FC<RegisterPageProps> = (props) => {
 
     try {
       await signUp.create({
-        firstName: firstName,
-        lastName: lastName,
-        emailAddress: emailAddress,
-        password: password,
-        phoneNumber: phoneNumber,
-        username: username,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        emailAddress: data.emailAddress,
+        password: data.password,
+        phoneNumber: "+90" + data.phoneNumber,
+        username: data.username,
       });
 
       await signUp.prepareEmailAddressVerification({
@@ -121,24 +109,19 @@ const RegisterPage: React.FC<RegisterPageProps> = (props) => {
 
       setShowVerifyCode(true);
     } catch (err: any) {
-      // See https://clerk.com/docs/custom-flows/error-handling
-      // for more info on error handling
-      console.error(JSON.stringify(err, null, 2));
       const error = JSON.parse(JSON.stringify(err, null, 2));
       if (error.errors) {
         error.errors.forEach((e: any) => {
-          if (e.code === "form_identifier_exists") {
-            if (e.meta.paramName === "email_address") {
-              alert("This email address is already taken.");
-            }
-            if (e.meta.paramName === "username") {
-              alert("This username is already taken.");
-            }
-          }
+          Toast.show({
+            type: "error",
+            text1: e.message,
+            position: "bottom"
+          })
         });
       }
     }
   };
+
 
   const onValidate = async () => {
     if (!isLoaded) {
@@ -153,23 +136,26 @@ const RegisterPage: React.FC<RegisterPageProps> = (props) => {
 
       if (completeSignUp.status === "complete") {
         await setActive({ session: completeSignUp.createdSessionId });
+        var model = {
+          userId: completeSignUp.createdUserId,
+          role: "user"
+        };
+        await mainService.post("Users/UpdateRole", model)
         router.replace("/");
       } else {
         await signUp.preparePhoneNumberVerification({
           strategy: "phone_code",
         });
         setShowSmsVerify(true);
-        clearOtp();
-        console.error(JSON.stringify(completeSignUp, null, 2));
+        handleClearOtp();
       }
     } catch (err: any) {
-      console.log(444);
-      console.error(JSON.stringify(err, null, 2));
+      console.log(444, JSON.stringify(err, null, 2));
     }
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       {!showVerifyCode ? (
         <React.Fragment>
           <View
@@ -209,73 +195,67 @@ const RegisterPage: React.FC<RegisterPageProps> = (props) => {
             </TouchableOpacity>
           </View>
 
-          <OrComponent />
-
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <AppInput
-              title={"İsim"}
-              value={form.firstName}
-              onChangeText={(value) => onChangeText("firstName", value)}
-              isRequired
-              isValidateControl={isValidateControl}
-            />
-            <AppInput
-              title={"Soyisim"}
-              value={form.lastName}
-              onChangeText={(value) => onChangeText("lastName", value)}
-              isRequired
-              isValidateControl={isValidateControl}
-            />
+          <View style={{ marginVertical: 30 }}>
+            <OrComponent />
           </View>
-          <AppInput
-            title={"Kullanıcı Adı"}
-            value={form.username}
-            onChangeText={(value) => onChangeText("username", value)}
-            isRequired
-            maxLength={4}
-            isValidateControl={isValidateControl}
-          />
-          <AppInput
-            title={"Email"}
-            value={form.emailAddress}
-            onChangeText={(value) => onChangeText("emailAddress", value)}
-            isRequired
-            keyboardType="email-address"
-            isValidateControl={isValidateControl}
-          />
-          <AppInput
-            title={"Şifre"}
-            value={form.password}
-            onChangeText={(value) => onChangeText("password", value)}
-            isRequired
-            isSecureText
-            maxLength={8}
-            isValidateControl={isValidateControl}
-          />
-          <CustomPhoneNumberInput
-            value={form.phoneNumber}
-            onChangeText={(value) => onChangeText("phoneNumber", value)}
-            setIsValidPhoneNumber={setIsValidPhoneNumber}
-            isValidateControl={isValidateControl}
-          />
+          <View style={{ flexDirection: "column", gap: 20, }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <CustomInput
+                title={"İsim"}
+                control={control}
+                name={"firstName"}
+              />
+              <CustomInput
+                title={"Soyisim"}
+                control={control}
+                name={"lastName"}
+              />
+            </View>
+            <CustomInput
+              title={"Kullanıcı Adı"}
+              control={control}
+              name={"username"}
+            />
+            <CustomInput
+              title={"Email"}
+              control={control}
+              name={"emailAddress"}
+              keyboardType="email-address"
+            />
+            <CustomInput
+              title={"Şifre"}
+              control={control}
+              name={"password"}
+              secureTextEntry
+            />
 
-          <TouchableOpacity onPress={onSignUpPress}>
-            <Text
-              style={[
-                styles.btnText,
-                {
-                  backgroundColor: "black",
-                  color: "white",
-                  padding: 5,
-                  textDecorationLine: "none",
-                  borderWidth: 1,
-                  borderRadius: 10,
-                },
-              ]}
-            >
-              Kayıt Ol
-            </Text>
-          </TouchableOpacity>
+            <CustomInput
+              title={"Telefon Numarası"}
+              control={control}
+              name={"phoneNumber"}
+              keyboardType="phone-pad"
+              isPhoneNumber
+            />
+
+            <TouchableOpacity onPress={handleSubmit(onSubmit)}>
+              <Text
+                style={[
+                  styles.btnText,
+                  {
+                    backgroundColor: "black",
+                    color: "white",
+                    padding: 5,
+                    textDecorationLine: "none",
+                    borderWidth: 1,
+                    borderRadius: 10,
+                    marginTop: 40
+                  },
+                ]}
+              >
+                Kayıt Ol
+              </Text>
+            </TouchableOpacity>
+          </View>
         </React.Fragment>
       ) : (
         <React.Fragment>
@@ -300,11 +280,6 @@ const RegisterPage: React.FC<RegisterPageProps> = (props) => {
               gap: 5,
             }}
           >
-            {!showSmsVerify ? (
-              <React.Fragment></React.Fragment>
-            ) : (
-              <React.Fragment></React.Fragment>
-            )}
             <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 16 }}>
               {`${showSmsVerify ? "Telefonunuzu" : "Emailinizi"} doğrulayın`}
             </Text>
@@ -314,9 +289,8 @@ const RegisterPage: React.FC<RegisterPageProps> = (props) => {
                 fontSize: 12,
               }}
             >
-              {`${
-                showSmsVerify ? "Telefonunuza" : "Email adresinize"
-              } gelen doğrulama kodunu giriniz`}
+              {`${showSmsVerify ? "Telefonunuza" : "Email adresinize"
+                } gelen doğrulama kodunu giriniz`}
             </Text>
             <View
               style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
@@ -327,7 +301,7 @@ const RegisterPage: React.FC<RegisterPageProps> = (props) => {
                   fontSize: 12,
                 }}
               >
-                {showSmsVerify ? form.phoneNumber : form.emailAddress}
+                {showSmsVerify ? watch("phoneNumber") : watch("emailAddress")}
               </Text>
 
               <AntDesign
@@ -367,7 +341,7 @@ const RegisterPage: React.FC<RegisterPageProps> = (props) => {
           </View>
         </React.Fragment>
       )}
-    </View>
+    </ScrollView>
   );
 };
 export default RegisterPage;

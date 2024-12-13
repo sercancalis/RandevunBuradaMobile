@@ -1,14 +1,17 @@
 import { Colors } from "@/constants/Colors";
-import { Entypo, FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { useSession } from "@clerk/clerk-expo";
+import { Entypo, FontAwesome, FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
+  Text,
   StyleSheet,
   useColorScheme,
   Image,
   Dimensions,
   TouchableOpacity,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -24,14 +27,17 @@ const Header: React.FC<HeaderProps> = (props) => {
   const insets = useSafeAreaInsets();
   const { width } = Dimensions.get("screen");
   const router = useRouter();
+  const { session } = useSession();
   return (
     <View
       style={[
         {
+          position: "relative",
           paddingTop: insets.top,
           backgroundColor:
             theme === "light" ? Colors.light.white : Colors.dark.white,
           paddingHorizontal: 20,
+          zIndex: 999
         },
         !props.hideShadow && {
           shadowColor: "#000",
@@ -68,13 +74,15 @@ const Header: React.FC<HeaderProps> = (props) => {
               style={{
                 width: width / 2,
                 height: 50,
+                marginLeft: 50
               }}
             />
           )}
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 5, width: 50 }}>
           <Ionicons name="notifications-outline" size={24} color="black" />
-          <Ionicons name="settings" size={24} color="black" onPress={() => router.push("/settings")} />
+          {/* <Ionicons name="settings" size={24} color="black" onPress={() => router.push("/settings")} /> */}
+          <FontAwesome name="user-circle-o" size={24} color="black" onPress={() => router.push(session ? "/settings" : "/login")} />
         </View>
       </View>
     </View>
