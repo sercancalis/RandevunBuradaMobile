@@ -21,6 +21,7 @@ import { mainService } from "@/utils/axiosInstance";
 import Toast from "react-native-toast-message";
 import { UserModel } from "@/services/models/UserModel";
 import { EmployeeListModel, EmployeeModel } from "@/services/models/EmployeeModel";
+import { useUser } from "@clerk/clerk-expo";
 
 interface EmployeesPageProps {
 
@@ -31,7 +32,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = (props) => {
     const [selectPersonel, setSelectPersonel] = useState<UserModel | null>(null);
     const { width, height } = Dimensions.get("screen");
     const [showModal, setShowModal] = useState(false);
-
+    const { user } = useUser()
     const {
         control,
         handleSubmit,
@@ -49,8 +50,8 @@ const EmployeesPage: React.FC<EmployeesPageProps> = (props) => {
 
     useEffect(() => {
         var getEmployeeListService = async () => {
-            var res = await getEmployeeList(11);
-            console.log(123, res)
+            var businessId = user?.publicMetadata?.businessId as number;
+            var res = await getEmployeeList(businessId);
             if (res) {
                 setEmployeeList(res.data.items);
             }
@@ -104,7 +105,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = (props) => {
 
     const addPersonel = async () => {
         var model = {
-            businessId: 11,
+            businessId: user?.publicMetadata?.businessId as number,
             userId: selectPersonel!.id,
         }
         try {

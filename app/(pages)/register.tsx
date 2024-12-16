@@ -71,14 +71,10 @@ const RegisterPage: React.FC<RegisterPageProps> = (props) => {
     }[strategy];
 
     try {
-      console.log(12131231)
       const { createdSessionId, setActive, authSessionResult } = await selectedAuth();
-      console.log(2222, createdSessionId)
-      console.log(333, authSessionResult)
       if (createdSessionId) {
         setActive!({ session: createdSessionId });
       } else {
-        console.log(444)
       }
     } catch (err) {
       const error = JSON.parse(JSON.stringify(err, null, 2));

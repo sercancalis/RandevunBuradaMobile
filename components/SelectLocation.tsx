@@ -99,7 +99,6 @@ const SelectLocation: React.FC<SelectLocationProps> = ({ onSelectLocation, onClo
         )
       })
 
-      console.log(8888, category)
       onSelectLocation(category, name, latitude, longitude, city, district, address, phoneNumber, images, workingHours);
     }
   }

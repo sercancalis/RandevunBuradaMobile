@@ -1,7 +1,6 @@
-import { Roles } from '@/types/globals' 
-import {  useUser } from '@clerk/clerk-expo'
+import { Roles } from '@/types/globals'  
 
-export const checkRole = (role: Roles) => {
-  const { user } = useUser() 
+export const checkRole = (user: any ,role: Roles) => {
   return user?.publicMetadata?.role === role
 }
+ 

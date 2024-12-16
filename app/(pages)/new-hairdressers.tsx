@@ -181,7 +181,6 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
   useEffect(() => {
     if (user) {
       var getBusinessInfo = async () => {
-        console.log(1231231231, user.id)
         var res = await mainService.post<GetBusinessResponseModel>(`Businesses/GetBusinessByUserId`, { userId: user.id });
         if (res.status === 200 && res.data) {
           setValue("id", res.data.id)

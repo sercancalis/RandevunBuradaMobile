@@ -51,7 +51,6 @@ const IndexPage: React.FC<IndexPageProps> = (props) => {
     GooglePlacesAPI.NewNearByPlace(data)
       .then((res) => {
         setPlaceList(res.data?.places);
-        console.log(placeList[0])
         setPopularPlaceList(
           [...res.data.places].sort((a: any, b: any) => b.rating - a.rating)
         );

@@ -2,7 +2,7 @@ import Header from "@/components/Header";
 import { Switch } from "@/components/Switch";
 import { mainService } from "@/utils/axiosInstance";
 import { checkRole } from "@/utils/roles";
-import { useClerk } from "@clerk/clerk-expo";
+import { useClerk, useUser } from "@clerk/clerk-expo";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
@@ -13,6 +13,7 @@ interface SettingsPageProps { }
 const SettingsPage: React.FC<SettingsPageProps> = (props) => {
   const { signOut } = useClerk();
   const router = useRouter();
+  const { user } = useUser();
 
   return (
     <View style={styles.container}>
@@ -37,15 +38,24 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
           <FontAwesome5 name="chevron-right" size={20} />
         </TouchableOpacity>
 
-        {/* {checkRole("boss") && ( */}
-        <TouchableOpacity
-          className="flex-row justify-between mt-4 p-4 shadow bg-white rounded-lg"
-          onPress={() => router.push("/employees")}
-        >
-          <Text style={{ fontFamily: "Poppins_500Medium" }}>Personel Kaydet</Text>
-          <FontAwesome5 name="chevron-right" size={20} />
-        </TouchableOpacity>
-        {/* )} */}
+        {checkRole(user, "boss") && (
+          <React.Fragment>
+            <TouchableOpacity
+              className="flex-row justify-between mt-4 p-4 shadow bg-white rounded-lg"
+              onPress={() => router.push("/employees")}
+            >
+              <Text style={{ fontFamily: "Poppins_500Medium" }}>Personel Kaydet</Text>
+              <FontAwesome5 name="chevron-right" size={20} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="flex-row justify-between mt-4 p-4 shadow bg-white rounded-lg"
+              onPress={() => router.push("/employees")}
+            >
+              <Text style={{ fontFamily: "Poppins_500Medium" }}>Hizmet Kaydet</Text>
+              <FontAwesome5 name="chevron-right" size={20} />
+            </TouchableOpacity>
+          </React.Fragment>
+        )}
 
         <TouchableOpacity
           className="flex-row justify-between mt-4 p-4 shadow bg-white rounded-lg"
