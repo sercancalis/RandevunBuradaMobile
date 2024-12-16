@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import { Switch } from "@/components/Switch";
 import { mainService } from "@/utils/axiosInstance";
+import { checkRole } from "@/utils/roles";
 import { useClerk } from "@clerk/clerk-expo";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -27,14 +28,16 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
           />
         </View>
 
+
         <TouchableOpacity
           className="flex-row justify-between mt-4 p-4 shadow bg-white rounded-lg"
           onPress={() => router.push("/new-hairdressers")}
         >
-          <Text style={{ fontFamily: "Poppins_500Medium" }}>İşletme Kaydet</Text>
+          <Text style={{ fontFamily: "Poppins_500Medium" }}>İşletmemi Kaydet</Text>
           <FontAwesome5 name="chevron-right" size={20} />
         </TouchableOpacity>
 
+        {/* {checkRole("boss") && ( */}
         <TouchableOpacity
           className="flex-row justify-between mt-4 p-4 shadow bg-white rounded-lg"
           onPress={() => router.push("/employees")}
@@ -42,6 +45,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
           <Text style={{ fontFamily: "Poppins_500Medium" }}>Personel Kaydet</Text>
           <FontAwesome5 name="chevron-right" size={20} />
         </TouchableOpacity>
+        {/* )} */}
 
         <TouchableOpacity
           className="flex-row justify-between mt-4 p-4 shadow bg-white rounded-lg"

@@ -3,28 +3,31 @@ import { View, Text, StyleSheet, Pressable, PressableProps } from 'react-native'
 
 interface CustomButtonProps extends PressableProps {
   onPress: () => void;
-  text: string; 
+  text: string;
   bgColor?: string;
   fgColor?: string;
+  disabled?: boolean;
 }
 
 const CustomButton: React.FC<CustomButtonProps> = ({
   onPress,
-  text, 
+  text,
   bgColor,
   fgColor,
+  disabled,
 }) => {
   return (
     <Pressable
       onPress={onPress}
       style={[
-        styles.container, 
-        bgColor ? { backgroundColor: bgColor } : {},
+        styles.container,
+        bgColor ? { backgroundColor: disabled ? "gray" : bgColor } : {},
       ]}
+      disabled={disabled}
     >
       <Text
         style={[
-          styles.text, 
+          styles.text,
           fgColor ? { color: fgColor } : {},
         ]}
       >

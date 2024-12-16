@@ -43,19 +43,7 @@ export default function PagesLayout() {
           ),
         }}
       />
-      <Stack.Screen
-        name="employees"
-        options={{
-          headerStyle: { backgroundColor: "transparent" },
-          headerShown: true,
-          headerTitle: "Personeller",
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <FontAwesome5 name="chevron-left" size={20} color="black" />
-            </TouchableOpacity>
-          ),
-        }}
-      />
+      <Stack.Screen name="employees" options={{ headerShown: false }} />
     </Stack>
   );
 }

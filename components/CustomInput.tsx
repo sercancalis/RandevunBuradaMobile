@@ -11,6 +11,7 @@ interface CustomInputProps {
   secureTextEntry?: boolean;
   isPhoneNumber?: boolean;
   keyboardType?: KeyboardTypeOptions | undefined;
+  disabled?: boolean;
 }
 
 const CustomInput: React.FC<CustomInputProps> = ({
@@ -20,7 +21,8 @@ const CustomInput: React.FC<CustomInputProps> = ({
   placeholder,
   secureTextEntry,
   isPhoneNumber = false,
-  keyboardType = "default"
+  keyboardType = "default",
+  disabled = false
 }) => {
 
   const formatPhoneNumberLive = (phone: string): string => {
@@ -58,6 +60,7 @@ const CustomInput: React.FC<CustomInputProps> = ({
         <View className='flex flex-1'>
           {title && (<Text style={{ fontFamily: "Poppins_600SemiBold" }}>{title}</Text>)}
           <Input
+            editable={!disabled}
             value={value ? value.toString() : ""}
             onChangeText={(text) => {
               if (isPhoneNumber) {

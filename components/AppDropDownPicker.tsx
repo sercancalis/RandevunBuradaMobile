@@ -15,6 +15,7 @@ interface AppDropdownPickerProps {
     data: { label: string, value: any }[];
     isRequired?: boolean;
     requiredMessage?: string;
+    disabled?: boolean;
 }
 
 const AppDropdownPicker: React.FC<AppDropdownPickerProps> = (props) => {
@@ -32,6 +33,7 @@ const AppDropdownPicker: React.FC<AppDropdownPickerProps> = (props) => {
     return (
         <View style={styles.container}>
             <Dropdown
+                disable={props.disabled}
                 style={[styles.dropdown, isFocus && { borderColor: 'blue' }]}
                 placeholderStyle={styles.placeholderStyle}
                 selectedTextStyle={styles.selectedTextStyle}

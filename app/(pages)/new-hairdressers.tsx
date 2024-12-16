@@ -1,6 +1,6 @@
 import CustomInput from "@/components/CustomInput";
 import HeaderPage from "@/components/HeaderPage";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import {
   View,
@@ -27,18 +27,22 @@ import Toast from "react-native-toast-message";
 import AppDropdownPicker from "@/components/AppDropDownPicker";
 import { categories } from "@/constants";
 import { addBusinessService } from "@/services/BusinessService";
-import ServicesSelector from "@/components/ServicesSelector";
+import * as ImageManipulator from 'expo-image-manipulator';
+import { useUser } from "@clerk/clerk-expo";
+import { mainService } from "@/utils/axiosInstance";
+import { GetBusinessResponseModel } from "@/services/models/GetBusinessResponseModel";
 
 interface NewHairdressersPageProps {
 
 }
 
 const schema = z.object({
+  id: z.number().default(0),
   category: z.string({ required_error: "Lütfen kategori seçiniz" }),
   name: z
     .string({ required_error: "Lütfen işletme adını giriniz" })
     .min(5, { message: "İşletme adı min 5 karakter olabilir." })
-    .max(30, { message: "İşletme adı max 30 karakter olabilir." }),
+    .max(50, { message: "İşletme adı max 50 karakter olabilir." }),
   phoneNumber: z.string({ required_error: "Lütfen işletme telefon numarasını giriniz" }),
   workingHours: z.array(
     z.object({
@@ -53,15 +57,11 @@ const schema = z.object({
   city: z.string({ required_error: "Lütfen il bilgisini giriniz" }),
   district: z.string({ required_error: "Lütfen ilçe bilgisini giriniz" }),
   images: z.array(z.string()).min(1, { message: "Lütfen min 1 adet resim ekleyiniz" }),
-  services: z.array(
-    z.string({
-      required_error: "Lütfen hizmet giriniz",
-    }).min(3, { message: "Hizmet adı en az 3 karakter olmalı" }) // Her hizmet için 3 karakterden fazla olmalı
-  )
-    .min(1, { message: "Lütfen min 1 adet hizmet ekleyiniz" })
+  isConfirmed: z.boolean().default(false)
 });
 
 const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
+  const { user } = useUser();
   const [showLocationModal, setShowLocationModal] = useState(false);
   const {
     control,
@@ -111,16 +111,24 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
     }
   }
 
-  async function uriToBlob(uri: string) {
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    return blob;
+  async function compressImage(uri: string): Promise<string> {
+    try {
+      const manipulatedImage = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 800 } }], // Genişliği 800px'e ayarlar, yüksekliği orantılı olarak otomatik ayarlanır.
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG } // %70 sıkıştırma ve JPEG formatında kaydeder.
+      );
+      return manipulatedImage.uri;
+    } catch (error) {
+      console.error('Error compressing image:', error);
+      throw error;
+    }
   }
 
   const onSubmit: SubmitHandler<z.infer<typeof schema>> = async (data: z.infer<typeof schema>) => {
-
     try {
       var formData = new FormData();
+      formData.append("userId", user!.id);
       formData.append("category", data.category);
       formData.append("name", data.name);
       formData.append("phoneNumber", data.phoneNumber);
@@ -135,12 +143,30 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
         formData.append(`workingHours[${index}].value`, hour.value);
       });
 
-      const imageBlobs = await Promise.all(images.map(uriToBlob));
+      const selectedImages = watch("images") || [];
 
-      imageBlobs.forEach((blob, index) => {
-        formData.append('Images', blob, `image${index}.jpg`);
+      const imageFiles = selectedImages.filter((img) => !img.startsWith("http")); // Picker images
+      const imageUrls = selectedImages.filter((img) => img.startsWith("http")); // Predefined URLs
+
+      // Add image URLs to the form data 
+      imageUrls.forEach((url, index) => {
+        formData.append(`imageUrls[${index}]`, url);
       });
 
+      const compressedImageUris = await Promise.all(
+        imageFiles.map(async (uri) => await compressImage(uri))
+      );
+
+      compressedImageUris.map(async (uri) => {
+        let filename = uri.split('/').pop();
+
+        // Infer the type of the image
+        let match = /\.(\w+)$/.exec(filename!);
+        let type = match ? `image/${match[1]}` : `image`;
+
+        //@ts-ignore
+        formData.append('imageFiles', { uri: uri, name: filename, type });
+      })
       var res = await addBusinessService(formData);
     } catch (error) {
     }
@@ -152,11 +178,38 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
     setValue("images", updatedImages);
   };
 
+  useEffect(() => {
+    if (user) {
+      var getBusinessInfo = async () => {
+        console.log(1231231231, user.id)
+        var res = await mainService.post<GetBusinessResponseModel>(`Businesses/GetBusinessByUserId`, { userId: user.id });
+        if (res.status === 200 && res.data) {
+          setValue("id", res.data.id)
+          setValue("category", res.data.category);
+          setValue("name", res.data.name);
+          setValue("phoneNumber", res.data.phoneNumber);
+          setValue("location.latitude", parseFloat(res.data.latitude));
+          setValue("location.longitude", parseFloat(res.data.longitude));
+          setValue("city", res.data.city);
+          setValue("district", res.data.district);
+          setValue("address", res.data.address);
+          setValue("images", res.data.imageUrls);
+          setValue("workingHours", res.data.workingHours)
+          setValue("isConfirmed", res.data.isConfirmed);
+        }
+      }
+
+      getBusinessInfo();
+    }
+  }, [user])
+
+  const disabled = watch("id") > 0 && !watch("isConfirmed");
+
   return (
     <ScrollView style={styles.container}>
       <HeaderPage title="İşletme Kaydet" />
       <View className="flex flex-1 flex-col bg-white p-4 gap-5 rounded-t-3xl shadow-black pb-24">
-
+        {disabled && (<Text className="text-center text-rose-500 font-bold">İşletmeniz Onay Beklemektedir</Text>)}
         <AppDropdownPicker
           defaultValue={watch("category")}
           data={categories}
@@ -166,12 +219,14 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
           placeholder="Kategori Seçiniz"
           isRequired
           requiredMessage={errors.category?.message}
+          disabled={disabled}
         />
 
         <CustomInput
           control={control}
           name="name"
           placeholder="İşletme Adı"
+          disabled={disabled}
         />
 
         <CustomInput
@@ -179,6 +234,7 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
           name="phoneNumber"
           placeholder="İşletme Telefon Numarası"
           isPhoneNumber
+          disabled={disabled}
         />
 
         <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
@@ -187,6 +243,7 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
               control={control}
               name="city"
               placeholder="İl"
+              disabled={disabled}
             />
           </View>
           <View className="w-1/2">
@@ -194,6 +251,7 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
               control={control}
               name="district"
               placeholder="İlçe"
+              disabled={disabled}
             />
           </View>
         </View>
@@ -203,6 +261,7 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
           name="address"
           placeholder="Adress"
           isPhoneNumber
+          disabled={disabled}
         />
 
         <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
@@ -211,6 +270,7 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
               control={control}
               name="location.latitude"
               placeholder="Latitude"
+              disabled={disabled}
             />
           </View>
           <View className="w-1/2">
@@ -218,11 +278,12 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
               control={control}
               name="location.longitude"
               placeholder="Longitude"
+              disabled={disabled}
             />
           </View>
         </View>
 
-        <TouchableOpacity onPress={() => setShowLocationModal(true)}>
+        <TouchableOpacity onPress={() => setShowLocationModal(true)} disabled={disabled}>
           <Text className="text-rose-500 underline">Konum bilgisini haritadan seçmek için tıklayınız</Text>
         </TouchableOpacity>
 
@@ -232,23 +293,13 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
             <WorkingHoursSelector
               control={control}
               name="workingHours"
-            />
-          </View>
-        </View>
-
-        <View>
-          <Text style={{ fontFamily: "Poppins_600SemiBold" }}>Hizmetler</Text>
-          <View style={{ borderWidth: 1, padding: 5, borderColor: "#cecece", borderRadius: 10 }}>
-            <ServicesSelector
-              control={control}
-              name="services"
-              error={Array.isArray(errors?.services) ? errors.services.map((error: any) => error.message).join(', ') : ''}
+              disabled={disabled}
             />
           </View>
         </View>
 
         <View style={{ flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5 }}>
-          <MaterialCommunityIcons name="file-image-plus" size={30} color="orange" onPress={selectImage} />
+          <MaterialCommunityIcons name="file-image-plus" size={30} color="orange" onPress={selectImage} disabled={disabled} />
           <Text style={{ fontFamily: "Poppins_600SemiBold" }}>İşletme İçin Fotoğraf Ekleyin</Text>
 
           <FlatList
@@ -277,6 +328,7 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
                     right: 15,
                   }}
                   size={24}
+                  disabled={disabled}
                   onPress={() => removeImage(index)}
                 />
               </View>
@@ -286,7 +338,7 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
         </View>
 
 
-        <CustomButton text="Kaydet" onPress={handleSubmit(onSubmit)} bgColor="red" />
+        <CustomButton text="Kaydet" onPress={handleSubmit(onSubmit)} bgColor="red" disabled={disabled} />
 
       </View>
 

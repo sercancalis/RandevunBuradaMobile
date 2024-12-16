@@ -1,16 +1,17 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Controller } from 'react-hook-form';
-import { WorkingHours } from '@/constants'; 
+import { WorkingHours } from '@/constants';
 import { Input } from './Input';
 
 interface WorkingHoursSelectorProps {
   control: any;
   name: string;
   error?: string;
+  disabled?: boolean;
 }
 
-const WorkingHoursSelector: React.FC<WorkingHoursSelectorProps> = ({ control, name, error }) => {
+const WorkingHoursSelector: React.FC<WorkingHoursSelectorProps> = ({ control, name, error, disabled }) => {
   const days = [
     { label: 'Pazartesi', value: WorkingHours.monday },
     { label: 'Salı', value: WorkingHours.tuesday },
@@ -29,13 +30,14 @@ const WorkingHoursSelector: React.FC<WorkingHoursSelectorProps> = ({ control, na
         <View style={styles.container}>
           {days.map((day) => (
             <View key={day.value} style={styles.dayContainer} className="w-full">
-              <Text style={styles.dayText}>{day.label}</Text>  
+              <Text style={styles.dayText}>{day.label}</Text>
               <Input
-                value={value?.[day.value].value || ''}  
-                onChangeText={(text: string) => onChange({ ...value, [day.value]: { value: text } })}  
+                value={value?.[day.value].value || ''}
+                onChangeText={(text: string) => onChange({ ...value, [day.value]: { value: text } })}
                 placeholder="09:00 - 17:00"
-                style={styles.input}  
+                style={styles.input}
                 className='w-1/2'
+                editable={!disabled}
               />
             </View>
           ))}
@@ -48,7 +50,7 @@ const WorkingHoursSelector: React.FC<WorkingHoursSelectorProps> = ({ control, na
 };
 
 const styles = StyleSheet.create({
-  container: { 
+  container: {
     gap: 5,
   },
   dayContainer: {
@@ -65,7 +67,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderWidth: 1,
     borderColor: "#ccc",
-    borderRadius: 5,   
+    borderRadius: 5,
   },
   errorText: {
     color: 'red',

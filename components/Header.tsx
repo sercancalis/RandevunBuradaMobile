@@ -74,9 +74,12 @@ const Header: React.FC<HeaderProps> = (props) => {
               style={{
                 width: width / 2,
                 height: 50,
-                marginLeft: 50
+                marginLeft: 25
               }}
             />
+          )}
+          {props.title && (
+            <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 16, marginLeft: 25 }}>{props.title}</Text>
           )}
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 5, width: 50 }}>
