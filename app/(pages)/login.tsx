@@ -6,7 +6,7 @@ import { useClerk, useOAuth, useSignIn, useUser } from "@clerk/clerk-expo";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
     View,
@@ -14,10 +14,15 @@ import {
     StyleSheet,
     Dimensions,
     TouchableOpacity,
-    Image
+    Image,
+    Platform
 } from "react-native";
 import { z } from "zod";
 import Toast from "react-native-toast-message";
+import * as Device from "expo-device";
+import * as Notifications from "expo-notifications";
+import { saveUserDeviceService } from "@/services/UserDeviceService";
+import Constants from 'expo-constants';
 
 interface LoginProps {
 
@@ -33,8 +38,8 @@ const { height } = Dimensions.get("screen");
 const Login: React.FC<LoginProps> = (props) => {
     useWarmUpBrowser();
     const { signIn, setActive, isLoaded } = useSignIn();
-    const { user } = useUser();
     const router = useRouter();
+    const { user } = useUser();
     const { startOAuthFlow: googleAuth } = useOAuth({ strategy: "oauth_google" });
     const { startOAuthFlow: appleAuth } = useOAuth({ strategy: "oauth_apple" });
     const { startOAuthFlow: facebookAuth } = useOAuth({
@@ -50,13 +55,15 @@ const Login: React.FC<LoginProps> = (props) => {
     } = useForm<z.infer<typeof loginSchema>>({
         resolver: zodResolver(loginSchema),
         defaultValues: {
-
+            input: "scalis37",
+            password: "Sercan1+"
         }
     });
 
     const [showPassword, setShowPassword] = useState(false);
     const [showSecondModal, setShowSecondModal] = useState(false);
     const [isPhone, setIsPhone] = useState(false);
+    const [hasSavedDevice, setHasSavedDevice] = useState(false);
 
     const onSelectAuth = async (strategy: Strategy) => {
         const selectedAuth = {
@@ -137,12 +144,101 @@ const Login: React.FC<LoginProps> = (props) => {
         }
     };
 
-
     const reset = () => {
         setShowSecondModal(false);
         setValue("input", "")
         setShowPassword(false);
     }
+
+    const getNotificationToken = async () => {
+        let token;
+
+        if (Platform.OS === 'android') {
+            await Notifications.setNotificationChannelAsync('myNotificationChannel', {
+                name: 'A channel is needed for the permissions prompt to appear',
+                importance: Notifications.AndroidImportance.MAX,
+                vibrationPattern: [0, 250, 250, 250],
+                lightColor: '#FF231F7C',
+            });
+        }
+
+        if (Device.isDevice) {
+            const { status: existingStatus } = await Notifications.getPermissionsAsync();
+            let finalStatus = existingStatus;
+            if (existingStatus !== 'granted') {
+                const { status } = await Notifications.requestPermissionsAsync();
+                finalStatus = status;
+            }
+            if (finalStatus !== 'granted') {
+                return;
+            }
+            try {
+                const projectId =
+                    Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+                if (!projectId) {
+                    return
+                }
+                token = (
+                    await Notifications.getExpoPushTokenAsync({
+                        projectId,
+                    })
+                ).data;
+                console.log(token);
+            } catch (e) {
+                token = `${e}`;
+            }
+        }
+
+        return token;
+    };
+
+    const getDeviceType = () => {
+        switch (Device.deviceType) {
+            case Device.DeviceType.PHONE:
+                return "PHONE";
+            case Device.DeviceType.TABLET:
+                return "TABLET";
+            case Device.DeviceType.DESKTOP:
+                return "DESKTOP";
+            case Device.DeviceType.TV:
+                return "TV";
+            case Device.DeviceType.UNKNOWN:
+            default:
+                return "";
+        }
+    };
+
+    const saveUserDevice = async (userId: string) => {
+        const notificationToken = await getNotificationToken();
+        if (!notificationToken) {
+            return;
+        }
+        const deviceInfo = {
+            userId: userId,
+            deviceToken: notificationToken ?? "",
+            brand: Device.brand || "",
+            deviceName: Device.deviceName || "",
+            deviceType: getDeviceType(),
+            modelName: Device.modelName || "",
+            osVersion: Device.osVersion || "",
+        };
+
+        try {
+            await saveUserDeviceService(deviceInfo);
+        } catch (error) {
+            console.error("Error saving device:", error);
+        }
+    };
+
+    useEffect(() => {
+        const saveData = async () => {
+            if (user?.id && !hasSavedDevice) {
+                await saveUserDevice(user.id);
+                setHasSavedDevice(true);
+            }
+        }
+        saveData();
+    }, [user, hasSavedDevice]);
 
     return (
         <View style={styles.container}>

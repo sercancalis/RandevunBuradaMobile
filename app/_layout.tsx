@@ -37,6 +37,7 @@ import {
 import "@/styles/globals.css";
 import { requestLocationPermissions } from "@/utils/requestPermissions";
 import Toast from 'react-native-toast-message';
+import * as Notifications from 'expo-notifications';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -60,6 +61,15 @@ const tokenCache = {
     }
   },
 };
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [fontsLoaded] = useFonts({

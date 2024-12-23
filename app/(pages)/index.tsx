@@ -69,7 +69,7 @@ const IndexPage: React.FC<IndexPageProps> = (props) => {
 
   return (
     <ScrollView style={styles.container}>
-      <Header showLogo hideShadow />
+      <Header showLogo hideShadow showNotificationIcon />
       <View
         style={{
           backgroundColor: "white",

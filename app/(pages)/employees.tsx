@@ -79,6 +79,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = (props) => {
                 <Image source={{ uri: item.userInfo.image_url }} style={{ width: 80, height: 80, borderWidth: .5, borderRadius: 100 }} />
                 <Text style={{ fontFamily: "Poppins_600SemiBold" }} className="uppercase">{`${item.userInfo.first_name} ${item.userInfo.last_name}`}</Text>
                 <Text style={{ fontFamily: "Poppins_600SemiBold", color: "red", textAlign: "center" }}>{index === 0 ? "Patron" : "Personel"}</Text>
+                <Text>{!item.isConfirmed && "(Onay Bekliyor)"}</Text>
             </View>
         )
     };
@@ -145,7 +146,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = (props) => {
             <View style={{ paddingVertical: 20 }}>
                 <TouchableOpacity style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 5, marginBottom: 20, marginHorizontal: 20 }} onPress={() => { setShowModal(true); reset() }}>
                     <FontAwesome name="plus-circle" size={20} />
-                    <Text style={{ fontFamily: "Poppins_600SemiBold" }}>Personel Kaydet</Text>
+                    <Text style={{ fontFamily: "Poppins_600SemiBold" }}>Personel Ekle</Text>
                 </TouchableOpacity>
 
                 <FlatList

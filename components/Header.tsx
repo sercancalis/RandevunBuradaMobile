@@ -19,6 +19,7 @@ interface HeaderProps {
   showLogo?: boolean;
   hideShadow?: boolean;
   showBackButton?: boolean;
+  showNotificationIcon?: boolean;
   title?: string;
 }
 
@@ -82,9 +83,8 @@ const Header: React.FC<HeaderProps> = (props) => {
             <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 16, marginLeft: 25 }}>{props.title}</Text>
           )}
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 5, width: 50 }}>
-          <Ionicons name="notifications-outline" size={24} color="black" />
-          {/* <Ionicons name="settings" size={24} color="black" onPress={() => router.push("/settings")} /> */}
+        <View style={{ flexDirection: "row", justifyContent: "center", gap: 5, width: 50 }}>
+          {session && props.showNotificationIcon && (<Ionicons name="notifications-outline" size={24} color="black" onPress={() => router.push("/(pages)/notifications")} />)}
           <FontAwesome name="user-circle-o" size={24} color="black" onPress={() => router.push(session ? "/settings" : "/login")} />
         </View>
       </View>

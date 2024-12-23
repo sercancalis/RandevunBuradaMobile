@@ -17,7 +17,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
 
   return (
     <View style={styles.container}>
-      <Header showLogo showBackButton />
+      <Header showLogo showBackButton showNotificationIcon />
       <View className="flex flex-col p-6 space-y-6">
         <View className="flex-row items-center justify-between">
           <Text style={{ fontFamily: "Poppins_600SemiBold" }}>Dark Modu</Text>
@@ -49,7 +49,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
             </TouchableOpacity>
             <TouchableOpacity
               className="flex-row justify-between mt-4 p-4 shadow bg-white rounded-lg"
-              onPress={() => router.push("/employees")}
+              onPress={() => router.push("/services")}
             >
               <Text style={{ fontFamily: "Poppins_500Medium" }}>Hizmet Kaydet</Text>
               <FontAwesome5 name="chevron-right" size={20} />
