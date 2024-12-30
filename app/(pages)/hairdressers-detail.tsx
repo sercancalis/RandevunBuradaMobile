@@ -1,7 +1,7 @@
 import { PlaceModel } from "@/Models/PlaceModel";
 import { FontAwesome } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -14,12 +14,16 @@ import {
 } from "react-native";
 import Carousel from "react-native-reanimated-carousel";
 import HeaderPage from "@/components/HeaderPage";
+import { getBusinessList } from "@/services/BusinessService";
 
-interface HairdressersDetailProps { }
+interface HairdressersDetailProps {
+}
 
 const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
+  const [showAppointmentButton, setShowAppointmentButton] = useState(false);
+  const [business, setBusiness] = useState<any>(null);
   const apiKey = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY;
-  const { place } = useLocalSearchParams();
+  const { place, category } = useLocalSearchParams();
   const router = useRouter();
   const { width, height } = useWindowDimensions();
 
@@ -36,6 +40,59 @@ const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
   if (!parsedData) {
     return null;
   }
+
+  const getBusinessListService = async () => {
+    try {
+      var res = await getBusinessList(category as string);
+
+      if (res?.status == 200 && res?.data?.items) {
+        var list = res.data.items;
+        var findBusiness = list.find((x: any) => x.latitude == parsedData.location.latitude && x.longitude == parsedData.location.longitude);
+        if (findBusiness) {
+          setBusiness(findBusiness);
+          const now = new Date();
+          const currentDay = getCustomDay(now.getDay()); // Düzenlenmiş gün (0: Pazartesi, 1: Salı, ...)
+          const currentTime = now.getHours() * 60 + now.getMinutes();
+          const todaysWorkingHours = findBusiness.workingHours.find((wh: any) => wh.workingDay === currentDay);
+          if (!todaysWorkingHours) {
+            return false; // Bugün için çalışma saati yoksa false döner
+          }
+
+          const [start, end] = todaysWorkingHours.value.split("–").map((time: any) => {
+            const [hours, minutes] = time.split(":").map(Number);
+            return hours * 60 + minutes; // Dakika cinsinden döndür
+          });
+
+          if (currentTime >= start && currentTime <= end) {
+            setShowAppointmentButton(true)
+          }
+
+        }
+      }
+    } catch (error) {
+
+    }
+  }
+
+  useEffect(() => {
+    if (category) getBusinessListService()
+  }, [category])
+
+  const getWorkingHourString = (day: number) => {
+    switch (day) {
+      case 0: return "Pazartesi";
+      case 1: return "Salı";
+      case 2: return "Çarşamba";
+      case 3: return "Perşembe";
+      case 4: return "Cuma";
+      case 5: return "Cumartesi";
+      case 6: return "Pazar";
+      default: return ""
+    }
+  }
+
+  // Mevcut günü dönüştüren fonksiyon
+  const getCustomDay = (day: number) => (day === 0 ? 6 : day - 1);
 
   return (
     <ScrollView style={styles.container}>
@@ -63,35 +120,45 @@ const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
             mode="parallax"
             width={width}
             height={width / 2}
-            data={parsedData.photos}
+            data={showAppointmentButton ? business.imageUrls : parsedData.photos}
             scrollAnimationDuration={1000}
             onSnapToItem={(index) => console.log("current index:", index)}
-            renderItem={({ item, index }) => (
-              <Image
-                source={{
-                  uri: `https://places.googleapis.com/v1/${item.name}/media?maxHeightPx=400&maxWidthPx=400&key=${apiKey}`,
-                }}
-                alt="Resim"
-                height={width / 2}
-                style={{ borderRadius: 10 }}
-                defaultSource={require("@/assets/images/randevu_burada_logo.png")}
-              />
+            renderItem={({ item, index }: any) => (
+              showAppointmentButton ?
+                <Image
+                  source={{
+                    uri: item as string
+                  }}
+                  alt="Resim"
+                  height={width / 2}
+                  style={{ borderRadius: 10 }}
+                  defaultSource={require("@/assets/images/randevu_burada_logo.png")}
+                /> :
+                <Image
+                  source={{
+                    uri: `https://places.googleapis.com/v1/${item.name}/media?maxHeightPx=400&maxWidthPx=400&key=${apiKey}`,
+                  }}
+                  alt="Resim"
+                  height={width / 2}
+                  style={{ borderRadius: 10 }}
+                  defaultSource={require("@/assets/images/randevu_burada_logo.png")}
+                />
             )}
           />
         </View>
         <View style={{ paddingHorizontal: 20, gap: 3 }}>
           <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 16 }}>
-            {parsedData?.displayName?.text}
+            {showAppointmentButton ? business.name : parsedData?.displayName?.text} {showAppointmentButton ? 1 : 0}
           </Text>
           <Text style={{ fontFamily: "Poppins_500Medium", fontSize: 12 }}>
-            {parsedData.shortFormattedAddress}
+            {showAppointmentButton ? business.address : parsedData.shortFormattedAddress}
           </Text>
 
-          {parsedData.nationalPhoneNumber && (
+          {(parsedData.nationalPhoneNumber || business.phoneNumber) && (
             <TouchableOpacity
               onPress={() =>
                 Linking.openURL(
-                  `tel:${parsedData.internationalPhoneNumber.replace(
+                  `tel:${(showAppointmentButton ? business.phoneNumber : parsedData.internationalPhoneNumber).replace(
                     /\s+/g,
                     ""
                   )}`
@@ -104,7 +171,7 @@ const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
                   textDecorationLine: "underline",
                 }}
               >
-                {parsedData.nationalPhoneNumber}
+                {showAppointmentButton ? business.phoneNumber : parsedData.nationalPhoneNumber}
               </Text>
             </TouchableOpacity>
           )}
@@ -126,7 +193,7 @@ const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
           >
             <Text style={{ fontFamily: "Poppins_600SemiBold" }}>
               Çalışma Saatleri{" "}
-              <Text
+              {!business && (<Text
                 style={{
                   fontFamily: "Poppins_600SemiBold",
                   color: parsedData.regularOpeningHours?.openNow
@@ -137,9 +204,41 @@ const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
               >
                 {`(${parsedData.regularOpeningHours?.openNow ? "Açık" : "Kapalı"
                   })`}
-              </Text>
+              </Text>)}
             </Text>
-            {parsedData.regularOpeningHours?.weekdayDescriptions?.map(
+            {showAppointmentButton ? business.workingHours.map((data: any, index: number) => {
+              return (
+                <View
+                  key={index}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    padding: 2,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Poppins_600SemiBold",
+                      fontSize: 12,
+                      color: "red",
+                      flex: 1,
+                    }}
+                  >
+                    {getWorkingHourString(data.workingDay)}:
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: "Poppins_600SemiBold",
+                      fontSize: 12,
+                      color: "black",
+                      flex: 1,
+                    }}
+                  >
+                    {data.value}
+                  </Text>
+                </View>
+              )
+            }) : parsedData.regularOpeningHours?.weekdayDescriptions?.map(
               (data: any, index: number) => {
                 var day = data.split(": ")[0];
                 var hour = data.split(": ")[1];
@@ -177,7 +276,7 @@ const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
               }
             )}
           </View>
-          <TouchableOpacity
+          {showAppointmentButton && <TouchableOpacity
             style={{
               backgroundColor: "#F99335",
               padding: 10,
@@ -189,7 +288,7 @@ const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
               router.push({
                 pathname: "/(pages)/appointment",
                 params: {
-                  place: JSON.stringify(parsedData),
+                  businessId: business.id
                 },
               })
             }
@@ -198,6 +297,7 @@ const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
               Randevu Al
             </Text>
           </TouchableOpacity>
+          }
         </View>
       </View>
     </ScrollView>

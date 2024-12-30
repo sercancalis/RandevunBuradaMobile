@@ -12,6 +12,7 @@ import RenderPlaceItem from "./RenderPlaceItem";
 
 interface PlaceListViewProps {
   placeList: PlaceModel[];
+  category: string;
   loading: boolean;
 }
 
@@ -26,7 +27,7 @@ const PlaceListView: React.FC<PlaceListViewProps> = (props) => {
           data={props.placeList}
           horizontal
           renderItem={({ item, index }) => (
-            <RenderPlaceItem item={item} key={index} />
+            <RenderPlaceItem item={item} category={props.category} key={index} />
           )}
           keyExtractor={(item, index) => index.toString()}
           contentContainerStyle={styles.container}

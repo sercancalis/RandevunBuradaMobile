@@ -167,6 +167,7 @@ const IndexPage: React.FC<IndexPageProps> = (props) => {
               .toLowerCase()
               .includes(search.trim().toLowerCase())
           )}
+          category={categories[selectedTab].value}
           loading={loading}
         />
       </View>
@@ -201,6 +202,7 @@ const IndexPage: React.FC<IndexPageProps> = (props) => {
               .toLowerCase()
               .includes(search.trim().toLowerCase())
           )}
+          category={categories[selectedTab].value}
           loading={loading}
         />
       </View>

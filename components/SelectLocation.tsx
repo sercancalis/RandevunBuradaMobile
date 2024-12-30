@@ -6,7 +6,6 @@ import usePermissionsStore from '@/store/permissionsStore';
 import GooglePlacesAPI from '@/utils/GooglePlacesAPI';
 import { categories } from '@/constants';
 import { PlaceModel } from '@/Models/PlaceModel';
-import RenderPlaceItem from './RenderPlaceItem';
 import Carousel from 'react-native-reanimated-carousel'
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModal, BottomSheetModalProvider, BottomSheetView } from '@gorhom/bottom-sheet';

@@ -15,6 +15,7 @@ import {
 
 interface RenderPlaceItemProps {
   item: PlaceModel;
+  category: string;
 }
 
 const { width, height } = Dimensions.get("screen");
@@ -39,6 +40,7 @@ const RenderPlaceItem: React.FC<RenderPlaceItemProps> = (props) => {
           pathname: "/(pages)/hairdressers-detail",
           params: {
             place: JSON.stringify(props.item),
+            category: props.category
           },
         })
       }
@@ -101,9 +103,8 @@ const RenderPlaceItem: React.FC<RenderPlaceItemProps> = (props) => {
                 width: width / 1.7,
               }}
             >
-              {`${props.item.addressComponents[4].shortText}/${
-                props.item.addressComponents[3].shortText
-              } - ${props.item.nationalPhoneNumber ?? ""}`}
+              {`${props.item.addressComponents[4].shortText}/${props.item.addressComponents[3].shortText
+                } - ${props.item.nationalPhoneNumber ?? ""}`}
             </Text>
             <Text
               style={{
@@ -121,20 +122,18 @@ const RenderPlaceItem: React.FC<RenderPlaceItemProps> = (props) => {
                   color: Colors.light.text,
                   fontSize: 11,
                 }}
-              >{` - ${
-                props.item.regularOpeningHours?.weekdayDescriptions[
-                  getAdjustedDay()
+              >{` - ${props.item.regularOpeningHours?.weekdayDescriptions[
+                getAdjustedDay()
                 ] ?? "Bilinmiyor"
-              }`}</Text>
+                }`}</Text>
             </Text>
             <View
               style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
             >
               <FontAwesome name="star" color={Colors.light.red} />
               <Text style={{ fontFamily: "Poppins_700Bold" }}>
-                {`${props.item.rating ?? 0} (${
-                  props.item.userRatingCount ?? 0
-                })`}
+                {`${props.item.rating ?? 0} (${props.item.userRatingCount ?? 0
+                  })`}
               </Text>
             </View>
           </View>
