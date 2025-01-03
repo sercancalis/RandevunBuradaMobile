@@ -20,6 +20,7 @@ interface RenderPlaceItemProps {
 
 const { width, height } = Dimensions.get("screen");
 const RenderPlaceItem: React.FC<RenderPlaceItemProps> = (props) => {
+  const isShowImage = process.env.EXPO_PUBLIC_SHOW_IMAGE === "1";
   const router = useRouter();
   const apiKey = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY;
   const openGoogleMaps = () => {
@@ -45,7 +46,7 @@ const RenderPlaceItem: React.FC<RenderPlaceItemProps> = (props) => {
         })
       }
     >
-      {props.item.photos ? (
+      {props.item.photos && isShowImage ? (
         <Image
           source={{
             uri: `https://places.googleapis.com/v1/${props.item.photos[0].name}/media?maxHeightPx=400&maxWidthPx=400&key=${apiKey}`,
@@ -124,7 +125,7 @@ const RenderPlaceItem: React.FC<RenderPlaceItemProps> = (props) => {
                 }}
               >{` - ${props.item.regularOpeningHours?.weekdayDescriptions[
                 getAdjustedDay()
-                ] ?? "Bilinmiyor"
+              ] ?? "Bilinmiyor"
                 }`}</Text>
             </Text>
             <View

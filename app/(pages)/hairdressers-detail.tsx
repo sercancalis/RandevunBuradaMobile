@@ -20,6 +20,7 @@ interface HairdressersDetailProps {
 }
 
 const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
+  const isShowImage = process.env.EXPO_PUBLIC_SHOW_IMAGE === "1";
   const [showAppointmentButton, setShowAppointmentButton] = useState(false);
   const [business, setBusiness] = useState<any>(null);
   const apiKey = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY;
@@ -124,24 +125,39 @@ const HairdressersDetail: React.FC<HairdressersDetailProps> = (props) => {
             scrollAnimationDuration={1000}
             onSnapToItem={(index) => console.log("current index:", index)}
             renderItem={({ item, index }: any) => (
-              showAppointmentButton ?
+              isShowImage ?
+                showAppointmentButton ?
+                  <Image
+                    source={{
+                      uri: item as string
+                    }}
+                    alt="Resim"
+                    height={width / 2}
+                    style={{ borderRadius: 10 }}
+                    defaultSource={require("@/assets/images/randevu_burada_logo.png")}
+                  /> :
+                  <Image
+                    source={{
+                      uri: `https://places.googleapis.com/v1/${item.name}/media?maxHeightPx=400&maxWidthPx=400&key=${apiKey}`,
+                    }}
+                    alt="Resim"
+                    height={width / 2}
+                    style={{ borderRadius: 10 }}
+                    defaultSource={require("@/assets/images/randevu_burada_logo.png")}
+                  />
+                :
                 <Image
-                  source={{
-                    uri: item as string
+                  source={require("@/assets/images/randevu_burada_logo.png")}
+                  alt="Logo Icon"
+                  style={{
+                    width: width * 0.75,
+                    height: height / 5,
+                    backgroundColor: "white",
+                    borderBottomWidth: 0.5,
+                    borderTopRightRadius: 10,
+                    borderTopLeftRadius: 10,
                   }}
-                  alt="Resim"
-                  height={width / 2}
-                  style={{ borderRadius: 10 }}
-                  defaultSource={require("@/assets/images/randevu_burada_logo.png")}
-                /> :
-                <Image
-                  source={{
-                    uri: `https://places.googleapis.com/v1/${item.name}/media?maxHeightPx=400&maxWidthPx=400&key=${apiKey}`,
-                  }}
-                  alt="Resim"
-                  height={width / 2}
-                  style={{ borderRadius: 10 }}
-                  defaultSource={require("@/assets/images/randevu_burada_logo.png")}
+                  resizeMode="contain"
                 />
             )}
           />

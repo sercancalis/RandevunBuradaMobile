@@ -35,6 +35,7 @@ interface AppointmentProps {
 }
 
 const Appointment: React.FC<AppointmentProps> = (props) => {
+  const isShowImage = process.env.EXPO_PUBLIC_SHOW_IMAGE === "1";
   const { businessId } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useUser();
@@ -319,15 +320,30 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
                 scrollAnimationDuration={1000}
                 onSnapToItem={(index) => console.log("current index:", index)}
                 renderItem={({ item, index }: any) => (
-                  <Image
-                    source={{
-                      uri: item,
-                    }}
-                    alt="Resim"
-                    height={width / 2}
-                    style={{ borderRadius: 10 }}
-                    defaultSource={require("@/assets/images/randevu_burada_logo.png")}
-                  />
+                  isShowImage ?
+                    <Image
+                      source={{
+                        uri: item
+                      }}
+                      alt="Resim"
+                      height={width / 2}
+                      style={{ borderRadius: 10 }}
+                      defaultSource={require("@/assets/images/randevu_burada_logo.png")}
+                    />
+                    :
+                    <Image
+                      source={require("@/assets/images/randevu_burada_logo.png")}
+                      alt="Logo Icon"
+                      style={{
+                        width: width * 0.75,
+                        height: height / 5,
+                        backgroundColor: "white",
+                        borderBottomWidth: 0.5,
+                        borderTopRightRadius: 10,
+                        borderTopLeftRadius: 10,
+                      }}
+                      resizeMode="contain"
+                    />
                 )}
               />
             </View>
