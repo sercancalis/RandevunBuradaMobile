@@ -1,5 +1,3 @@
-import { PlaceModel } from "@/Models/PlaceModel";
-import Header from "@/components/Header";
 import HeaderPage from "@/components/HeaderPage";
 import { FontAwesome } from "@expo/vector-icons";
 import { BottomSheetModal, BottomSheetModalProvider, BottomSheetView } from "@gorhom/bottom-sheet";
@@ -18,20 +16,20 @@ import {
   ScrollView,
   Platform,
   Pressable,
-  Alert
+  Alert,
+  ActivityIndicator
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Carousel from "react-native-reanimated-carousel";
 import RNDateTimePicker, {
   DateTimePickerAndroid,
-  DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import moment from "moment";
 import { getEmployeeList } from "@/services/EmployeeService";
-import { getBusinessById, getBusinessList } from "@/services/BusinessService";
+import { getBusinessById } from "@/services/BusinessService";
 import Toast from "react-native-toast-message";
 import { useUser } from "@clerk/clerk-expo";
-import { addAppointment } from "@/services/AppointmentService";
+import { addAppointment, getActiveHours } from "@/services/AppointmentService";
 interface AppointmentProps {
 
 }
@@ -44,13 +42,17 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const [selectedPersonel, setSelectedPersonel] = useState<any>(null);
-  const [selectedHour, setSelectedHour] = useState(new Date());
+  const [selectedDay, setSelectedDay] = useState(new Date());
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [sheetModalType, setSheetModalType] = useState<"personel" | "hour" | "time" | "services">("personel");
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [personelList, setPersonelList] = useState<any>([]);
   const [business, setBusiness] = useState<any>(null);
-  const [showAppointment, setShowAppointment] = useState(true);
+  const [activeTimes, setActiveTimes] = useState<{ hour: string, isAvailable: boolean }[]>([])
+  const [isLoading, setIsLoading] = useState(false);
+  const maxDate = new Date();
+  maxDate.setDate(maxDate.getDate() + 7);
+
   if (!businessId) {
     return null;
   }
@@ -70,7 +72,6 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
     try {
       var res = await getBusinessById(parseInt(businessId as string, 10));
       if (res?.status == 200) {
-        console.log(555, res.data)
         setBusiness(res.data);
       }
     } catch (error) {
@@ -84,6 +85,7 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
       getPersonelList();
     }
   }, [businessId])
+
   const openBottomSheet = () => {
     setIsBottomSheetVisible(true);
     bottomSheetModalRef.current?.present();
@@ -92,57 +94,6 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
   const closeBottomSheet = () => {
     setIsBottomSheetVisible(false);
     bottomSheetModalRef.current?.dismiss();
-  };
-
-  const getCustomDay = (day: number) => (day === 0 ? 6 : day - 1);
-
-  const getAvailableTimes = () => {
-    const now = selectedHour;
-    const currentDay = getCustomDay(now.getDay());
-
-    // Günün çalışma saatlerini bul
-    const todaysWorkingHours = business.workingHours.find(
-      (wh: any) => wh.workingDay === currentDay
-    );
-
-    if (!todaysWorkingHours) {
-      Toast.show({
-        text1: "Çalışma saatleri bulunamadı",
-        position: "bottom",
-        type: "error"
-      })
-      setShowAppointment(false);
-      return [];
-    }
-
-    // Başlangıç ve bitiş saatlerini al
-    const [start, end] = todaysWorkingHours.value.split("–");
-    const [startHour, startMinute] = start.split(":").map(Number);
-    const [endHour, endMinute] = end.split(":").map(Number);
-
-    const times: string[] = [];
-    let currentHour = startHour;
-    let currentMinute = startMinute;
-
-    // Yarım saatlik aralıklarla saatleri oluştur
-    while (
-      currentHour < endHour ||
-      (currentHour === endHour && currentMinute < endMinute)
-    ) {
-      times.push(
-        `${currentHour.toString().padStart(2, "0")}:${currentMinute
-          .toString()
-          .padStart(2, "0")}`
-      );
-
-      currentMinute += 30;
-      if (currentMinute >= 60) {
-        currentMinute = 0;
-        currentHour += 1;
-      }
-    }
-
-    return times;
   };
 
   const toggleServiceSelection = (service: string) => {
@@ -156,6 +107,14 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
   };
 
   const sendAppointment = async () => {
+    if (!user) {
+      Toast.show({
+        text1: "Lütfen kullanıcı girişi yapınız",
+        position: "bottom",
+        type: "error"
+      })
+      return;
+    }
     if (!selectedPersonel) {
       Toast.show({
         text1: "Lütfen personel seçiniz",
@@ -164,8 +123,7 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
       })
       return;
     }
-
-    if (!selectedHour) {
+    if (!selectedDay) {
       Toast.show({
         text1: "Lütfen tarih seçiniz",
         position: "bottom",
@@ -173,7 +131,6 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
       })
       return;
     }
-
     if (!selectedTime) {
       Toast.show({
         text1: "Lütfen saat seçiniz",
@@ -182,7 +139,6 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
       })
       return;
     }
-
     if (!selectedServices) {
       Toast.show({
         text1: "Lütfen servis seçiniz",
@@ -191,32 +147,59 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
       })
       return;
     }
+    try {
+      setIsLoading(true)
+      var model = {
+        businessId: parseInt(businessId as string, 10),
+        userId: user!.id,
+        personelId: selectedPersonel.userId,
+        date: selectedDay,
+        time: selectedTime,
+        services: selectedServices.map((service: any) => service.name).join(",")
+      }
 
-    var model = {
-      businessId: parseInt(businessId as string, 10),
-      userId: user!.id,
-      personelId: selectedPersonel.id,
-      date: selectedHour,
-      time: selectedTime,
-      services: selectedServices.join(",")
-    }
-
-    var res = await addAppointment(model);
-    if (res) {
-      Toast.show({
-        text1: "Randevu Oluşturuldu.",
-        position: "bottom",
-        type: "success",
-        onHide: () => router.push("/")
-      })
-    } else {
-      Toast.show({
-        text1: "Randevu Oluşturulamadı",
-        position: "bottom",
-        type: "error"
-      })
+      var res = await addAppointment(model);
+      if (res) {
+        Toast.show({
+          text1: "Randevu Oluşturuldu.",
+          position: "bottom",
+          type: "success",
+          onHide: () => router.push("/")
+        })
+      } else {
+        setIsLoading(false);
+        Toast.show({
+          text1: "Randevu Oluşturulamadı",
+          position: "bottom",
+          type: "error"
+        })
+      }
+    } catch (error) {
+      setIsLoading(false);
     }
   }
+
+  const getActiveHoursService = async () => {
+    try {
+      var model = {
+        businessId: parseInt(businessId as string, 10),
+        personelId: selectedPersonel.userId,
+        date: moment(selectedDay).format("YYYY-MM-DD")
+      }
+      var res = await getActiveHours(model);
+      if (res?.status == 200) {
+        setActiveTimes(res.data);
+        setSelectedTime(null);
+      }
+    } catch (error) {
+
+    }
+  }
+
+  useEffect(() => {
+    if (selectedPersonel && selectedDay) getActiveHoursService();
+    else setActiveTimes([])
+  }, [selectedPersonel, selectedDay])
 
   return (
     <View style={styles.container}>
@@ -278,7 +261,7 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
                   borderWidth: 1,
                   borderRadius: 10
                 }}>
-                <Text style={{ fontFamily: "Poppins_500Medium" }}>{moment(selectedHour).format("DD.MM.YYYY")}</Text>
+                <Text style={{ fontFamily: "Poppins_500Medium" }}>{moment(selectedDay).format("DD.MM.YYYY")}</Text>
                 <FontAwesome name="chevron-down" size={20} />
               </TouchableOpacity>
               <TouchableOpacity
@@ -316,7 +299,12 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
                 marginHorizontal: 20,
                 borderRadius: 10
               }}>
-              <Text style={{ fontFamily: "Poppins_500Medium" }}>{selectedServices.length > 0 ? selectedServices.slice(0, 3).join(", ") + (selectedServices.length > 3 ? "..." : "") : "Hizmet Seçin"}</Text>
+              <Text style={{ fontFamily: "Poppins_500Medium" }}>
+                {selectedServices.length > 0
+                  ? selectedServices.slice(0, 3).map((service: any) => service.name).join(", ") + (selectedServices.length > 3 ? "..." : "")
+                  : "Hizmet Seçin"
+                }
+              </Text>
               <FontAwesome name="chevron-down" size={20} />
             </TouchableOpacity>
 
@@ -372,7 +360,7 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
                 </TouchableOpacity>
               )}
 
-              {showAppointment && (<TouchableOpacity
+              <TouchableOpacity
                 style={{
                   backgroundColor: "#F99335",
                   padding: 10,
@@ -381,12 +369,13 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
                   marginTop: 50,
                 }}
                 onPress={sendAppointment}
+                disabled={isLoading}
               >
-                <Text style={{ color: "white", fontFamily: "Poppins_600SemiBold" }}>
+                <Text style={{ flexDirection: "row", alignItems: "center", gap: 5, color: "white", fontFamily: "Poppins_600SemiBold" }}>
+                  {isLoading && <ActivityIndicator />}
                   Randevu Oluştur
                 </Text>
               </TouchableOpacity>
-              )}
             </View>
           </View>
 
@@ -398,7 +387,7 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
           <BottomSheetModal
             ref={bottomSheetModalRef}
             index={0}
-            snapPoints={['45%']}
+            snapPoints={['50%']}
             onDismiss={closeBottomSheet}
           >
             <BottomSheetView style={styles.contentContainer}>
@@ -431,15 +420,16 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
                     {Platform.OS === "ios" && (
                       <RNDateTimePicker
                         mode="date"
-                        value={selectedHour}
+                        value={selectedDay}
                         onChange={(event, date) => {
                           if (date) {
-                            setSelectedHour(date);
+                            setSelectedDay(date);
                             closeBottomSheet();
                           }
                         }}
                         locale="tr"
                         minimumDate={new Date()}
+                        maximumDate={maxDate}
                         display="inline"
                       />
                     )}
@@ -447,15 +437,16 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
                       <Pressable
                         onPress={() => {
                           DateTimePickerAndroid.open({
-                            value: selectedHour,
+                            value: selectedDay,
                             onChange: (event, date) => {
                               if (date) {
-                                setSelectedHour(date);
+                                setSelectedDay(date);
                                 closeBottomSheet();
                               }
                             },
                             mode: "date",
                             minimumDate: new Date(),
+                            maximumDate: maxDate,
                             display: "spinner"
                           });
                         }}
@@ -467,25 +458,39 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
                   : sheetModalType === "time" ?
                     <React.Fragment>
                       <Text style={styles.title}>Saat Seçimi</Text>
-                      <ScrollView contentContainerStyle={styles.scrollContent}>
-                        {getAvailableTimes().map((data, index) => (
-                          <TouchableOpacity
+                      <ScrollView contentContainerStyle={styles.grid}>
+                        {activeTimes.map((data, index) => (
+                          <View
                             key={index}
-                            style={styles.itemContainer}
-                            onPress={() => {
-                              setSelectedTime(data);
-                              closeBottomSheet();
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              width: '50%',
+                              marginBottom: 10,
                             }}
                           >
-                            <Checkbox
-                              onValueChange={() => {
-                                setSelectedTime(data);
+                            <TouchableOpacity
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 5
+                              }}
+                              onPress={() => {
+                                setSelectedTime(data.hour);
                                 closeBottomSheet();
                               }}
-                              value={data === selectedTime}
-                            />
-                            <Text style={styles.itemLabel}>{data}</Text>
-                          </TouchableOpacity>
+                              disabled={!data.isAvailable}
+                            >
+                              <Checkbox
+                                onValueChange={() => {
+                                  setSelectedTime(data.hour);
+                                  closeBottomSheet();
+                                }}
+                                value={data.hour === selectedTime}
+                              />
+                              <Text style={[styles.itemLabel, { color: data.isAvailable ? "black" : "gray" }]}>{data.hour} {!data.isAvailable && "(Dolu)"}</Text>
+                            </TouchableOpacity>
+                          </View>
                         ))}
                       </ScrollView>
                     </React.Fragment>
@@ -503,11 +508,14 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
                               marginBottom: 10,
                             }}
                           >
-                            <TouchableOpacity style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              gap: 5
-                            }}>
+                            <TouchableOpacity
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 5
+                              }}
+                              onPress={() => toggleServiceSelection(service)}
+                            >
                               <Checkbox
                                 value={selectedServices.includes(service)}
                                 onValueChange={() => toggleServiceSelection(service)}
@@ -536,6 +544,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     padding: 16,
+    paddingBottom: 100,
     zIndex: 9999,
   },
   title: {
@@ -543,7 +552,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   scrollContent: {
-    paddingBottom: 25,
+    paddingBottom: 100,
   },
   itemContainer: {
     paddingVertical: 8,
@@ -554,7 +563,8 @@ const styles = StyleSheet.create({
     gap: 5
   },
   itemLabel: {
-    fontSize: 16,
+    fontSize: 14,
+    fontFamily: "Poppins_500Medium"
   },
   overlay: {
     position: 'absolute',
@@ -568,6 +578,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    paddingVertical: 5
   },
   secondItem: {
     marginLeft: '4%', // Add margin to the second item to keep spacing even
