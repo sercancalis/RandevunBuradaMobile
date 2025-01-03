@@ -110,6 +110,7 @@ const SelectLocation: React.FC<SelectLocationProps> = ({ onSelectLocation, onClo
         </TouchableOpacity>
 
         <MapView
+          key={isLoading ? "loading" : "loaded"}
           style={styles.map}
           initialRegion={location}
           loadingEnabled={isLoading}

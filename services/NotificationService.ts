@@ -10,3 +10,12 @@ export const getNotificationListService = async (index: number, size:number, rec
         return null;
     }
 }
+
+export const sendNotificationAction = async (model:any) => {
+    try {
+        var res = await mainService.post<boolean>(`Notifications/NotificationAction`,model);
+        return res;   
+    } catch (error) {
+        return null;
+    }
+}

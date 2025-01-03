@@ -168,7 +168,25 @@ const NewHairdressersPage: React.FC<NewHairdressersPageProps> = (props) => {
         formData.append('imageFiles', { uri: uri, name: filename, type });
       })
       var res = await addBusinessService(formData);
+      if (res?.status == 200 && res.data) {
+        Toast.show({
+          text1: "İşletmeniz kaydedilmiştir",
+          position: "bottom",
+          type: "success"
+        })
+      } else {
+        Toast.show({
+          text1: "İşletmeniz kaydedilemedi",
+          position: "bottom",
+          type: "error"
+        })
+      }
     } catch (error) {
+      Toast.show({
+        text1: "İşletmeniz kaydedilemedi",
+        position: "bottom",
+        type: "error"
+      })
     }
   };
 

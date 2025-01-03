@@ -1,15 +1,19 @@
 import Header from "@/components/Header";
-import { getNotificationListService } from "@/services/NotificationService";
-import { NotificationModel } from "@/services/models/NotificationModel";
+import { getNotificationListService, sendNotificationAction } from "@/services/NotificationService";
+import { NotificationModel, NotificationType } from "@/services/models/NotificationModel";
 import { useUser } from "@clerk/clerk-expo";
+import { AntDesign, Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
     View,
     Text,
     StyleSheet,
     ActivityIndicator,
-    FlatList
+    FlatList,
+    TouchableOpacity
 } from "react-native";
+import Toast from "react-native-toast-message";
 
 
 interface NotificationsProps {
@@ -17,7 +21,8 @@ interface NotificationsProps {
 }
 
 const Notifications: React.FC<NotificationsProps> = (props) => {
-    const [data, setData] = useState<NotificationModel[]>([])
+    const [data, setData] = useState<NotificationModel[]>([]);
+    const router = useRouter();
     const [page, setPage] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
@@ -44,7 +49,7 @@ const Notifications: React.FC<NotificationsProps> = (props) => {
             if (res?.status === 200 && res?.data) {
                 const items = res.data.items;
                 setData((prevData) => [...prevData, ...items]);
-                setHasMore(items.length === size); // If less than `size`, no more data
+                setHasMore(items.length === size);
             }
         } catch (error) {
             console.error("Error fetching notifications:", error);
@@ -68,11 +73,14 @@ const Notifications: React.FC<NotificationsProps> = (props) => {
         return <ActivityIndicator style={{ marginVertical: 16 }} />;
     };
 
-    const renderEmpty = () => (
-        <View style={styles.centered}>
-            <Text>Henüz bir bildirim bulunmamaktadır.</Text>
-        </View>
-    );
+    const renderEmpty = () => {
+        if (isLoading) return null;
+        return (
+            <View style={styles.centered}>
+                <Text>Henüz bir bildirim bulunmamaktadır.</Text>
+            </View>
+        )
+    };
 
     useEffect(() => {
         if (user) {
@@ -82,6 +90,39 @@ const Notifications: React.FC<NotificationsProps> = (props) => {
             getNotificationList(user.id, 0)
         }
     }, [user])
+
+    const sendAction = async (notificationId: number, action: boolean) => {
+        try {
+            var model = {
+                id: notificationId,
+                action: action,
+                message: ""
+            }
+            var res = await sendNotificationAction(model);
+            if (res?.status == 200 && res.data) {
+                Toast.show({
+                    text1: (action ? "Onay" : "Ret") + " işleminiz gerçekleştirilmiştir.",
+                    position: "bottom",
+                    type: "success"
+                })
+
+                router.push("/")
+
+            } else {
+                Toast.show({
+                    text1: (action ? "Onay" : "Ret") + " işleminiz gerçekleştirilememiştir.",
+                    position: "bottom",
+                    type: "error"
+                })
+            }
+        } catch (error) {
+            Toast.show({
+                text1: (action ? "Onay" : "Ret") + " işleminiz gerçekleştirilememiştir.",
+                position: "bottom",
+                type: "error"
+            })
+        }
+    }
     return (
         <View style={styles.container}>
             <Header title="Bildirimler" showBackButton />
@@ -90,8 +131,29 @@ const Notifications: React.FC<NotificationsProps> = (props) => {
                 keyExtractor={(item, index) => `${item.id}-${index}`}
                 renderItem={({ item }) => (
                     <View style={styles.notificationItem}>
-                        <Text style={styles.title}>{item.title}</Text>
-                        <Text style={styles.body}>{item.body}</Text>
+                        {item.notificationType === NotificationType.All || item.isComplete ? (
+                            <React.Fragment>
+                                <Text style={styles.title}>{item.title}</Text>
+                                <Text style={styles.body}>{item.body}</Text>
+                            </React.Fragment>
+                        ) :
+                            (
+                                <View style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                                    <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10 }}>
+                                        <TouchableOpacity onPress={() => sendAction(item.id, true)}>
+                                            <Feather name="check-circle" size={24} color="green" />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity onPress={() => sendAction(item.id, false)}>
+                                            <Feather name="x-circle" size={24} color="red" />
+                                        </TouchableOpacity>
+                                    </View>
+                                    <View style={{ flex: 4 }}>
+                                        <Text style={styles.title}>{item.title}</Text>
+                                        <Text style={styles.body}>{item.body}</Text>
+                                    </View>
+                                </View>
+                            )}
+
                     </View>
                 )}
                 ListEmptyComponent={renderEmpty}
@@ -112,6 +174,7 @@ const styles = StyleSheet.create({
     },
     centered: {
         flex: 1,
+        marginTop: 20,
         alignItems: "center",
         justifyContent: "center",
     },

@@ -152,6 +152,7 @@ const Appointment: React.FC<AppointmentProps> = (props) => {
       var model = {
         businessId: parseInt(businessId as string, 10),
         userId: user!.id,
+        userName: user.fullName,
         personelId: selectedPersonel.userId,
         date: selectedDay,
         time: selectedTime,

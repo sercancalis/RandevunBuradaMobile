@@ -22,6 +22,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
         <View className="flex-row items-center justify-between">
           <Text style={{ fontFamily: "Poppins_600SemiBold" }}>Dark Modu</Text>
           <Switch
+            disabled
             value={Appearance.getColorScheme() === "dark"}
             onValueChange={(value) =>
               Appearance.setColorScheme(value ? "dark" : "light")

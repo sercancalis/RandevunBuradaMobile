@@ -132,11 +132,6 @@ const RegisterPage: React.FC<RegisterPageProps> = (props) => {
 
       if (completeSignUp.status === "complete") {
         await setActive({ session: completeSignUp.createdSessionId });
-        var model = {
-          userId: completeSignUp.createdUserId,
-          role: "user"
-        };
-        await mainService.post("Users/UpdateRole", model)
         router.replace("/");
       } else {
         await signUp.preparePhoneNumberVerification({

@@ -7,7 +7,10 @@ export interface NotificationModel{
     notificationType: NotificationType
     createdDate: Date
     updatedDate?: Date
-    isActive: boolean 
+    isActive: boolean,
+    action?: boolean | null;
+    actionId: number; 
+    isComplete:boolean; 
 }
 
 export enum NotificationType
